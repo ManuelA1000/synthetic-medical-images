@@ -1,0 +1,22 @@
+---
+title: "1_clean_data"
+output: html_notebook
+---
+
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(readxl)
+
+set.seed(1337)
+```
+
+
+
+```{r}
+set_100 <- read_xlsx('../irop_data/test_images_100.xlsx') %>%
+    clean_names()
+```
+
