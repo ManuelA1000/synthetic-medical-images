@@ -9,6 +9,8 @@ output: html_notebook
 library(tidyverse)
 library(janitor)
 library(readxl)
+library(tools)
+library(fs)
 
 set.seed(1337)
 ```
@@ -16,7 +18,118 @@ set.seed(1337)
 
 
 ```{r}
-set_100 <- read_xlsx('../irop_data/test_images_100.xlsx') %>%
-    clean_names()
+all_irop <- read_csv('/media/coyner/850 EVO/irop_data/irop_07092020.csv') %>%
+    clean_names() %>%
+    filter(reader == 'goldenstandardreading@ohsu.edu') %>%
+    mutate(session = str_remove_all(session, '[ a-zA-Z]'),
+           posterior = paste(file_path_sans_ext(basename(posterior)), '.png', sep = ''),
+           nasal = paste(file_path_sans_ext(basename(nasal)), '.png', sep = ''),
+           temporal = paste(file_path_sans_ext(basename(temporal)), '.png', sep = ''),
+           inferior = paste(file_path_sans_ext(basename(inferior)), '.png', sep = ''),
+           superior = paste(file_path_sans_ext(basename(superior)), '.png', sep = ''))
+
+split_1 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 1) %>%
+    clean_names() %>%
+    separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
+    inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
+    na_if('NULL.png') %>%
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+
+split_2 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 2) %>%
+    clean_names() %>%
+    separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
+    inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
+    na_if('NULL.png') %>%
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+
+split_3 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 3) %>%
+    clean_names() %>%
+    separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
+    inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
+    na_if('NULL.png') %>%
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+
+split_4 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 4) %>%
+    clean_names() %>%
+    separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
+    inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
+    na_if('NULL.png') %>%
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+
+split_5 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 5) %>%
+    clean_names() %>%
+    separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
+    inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
+    na_if('NULL.png') %>%
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+```
+
+
+```{r}
+gan_no_plus <- split_1 %>%
+    bind_rows(split_2, split_3) %>%
+    filter(ground_truth != 'Pre-Plus') %>%
+    gather('view', 'image_id', posterior:superior) %>%
+    drop_na() %>%
+    group_by(ground_truth) %>%
+    add_count() %>%
+    slice(sample(row_number(), min(.$n))) %>%
+    select(-n)
+
+gan_no_preplus <- split_1 %>%
+    bind_rows(split_2, split_3) %>%
+    filter(ground_truth != 'Plus') %>%
+    gather('view', 'image_id', posterior:superior) %>%
+    drop_na() %>%
+    group_by(ground_truth) %>%
+    add_count() %>%
+    slice(sample(row_number(), min(.$n))) %>%
+    select(-n)
+
+gan_preplus_plus <- split_1 %>%
+    bind_rows(split_2, split_3) %>%
+    filter(ground_truth != 'No') %>%
+    gather('view', 'image_id', posterior:superior) %>%
+    drop_na() %>%
+    group_by(ground_truth) %>%
+    add_count() %>%
+    slice(sample(row_number(), min(.$n))) %>%
+    select(-n)
+```
+
+
+
+```{r}
+dir_create('./out')
+write_csv(gan_no_plus, './out/gan_no_plus.csv')
+write_csv(gan_no_preplus, './out/gan_no_preplus.csv')
+write_csv(gan_preplus_plus, './out/gan_preplus_plus.csv')
+```
+
+
+
+```{r}
+dir_create('./out/gan/no_plus/No')
+dir_create('./out/gan/no_plus/Plus')
+
+dir_create('./out/gan/no_preplus/No')
+dir_create('./out/gan/no_preplus/Pre-Plus')
+
+dir_create('./out/gan/preplus_plus/Pre-Plus')
+dir_create('./out/gan/preplus_plus/Plus')
+```
+
+
+```{r}
+src = '/media/coyner/850 EVO/irop_data/unet_segmentations'
+
+dst = './out/gan/no_plus'
+file_copy(paste(src, gan_no_plus$image_id, sep = '/'), paste(dst, gan_no_plus$ground_truth, gan_no_plus$image_id, sep = '/'), overwrite = TRUE)
+
+dst = './out/gan/no_preplus'
+file_copy(paste(src, gan_no_preplus$image_id, sep = '/'), paste(dst, gan_no_preplus$ground_truth, gan_no_preplus$image_id, sep = '/'), overwrite = TRUE)
+
+dst = './out/gan/preplus_plus'
+file_copy(paste(src, gan_preplus_plus$image_id, sep = '/'), paste(dst, gan_preplus_plus$ground_truth, gan_preplus_plus$image_id, sep = '/'), overwrite = TRUE)
 ```
 
