@@ -2,12 +2,16 @@ import os
 import cv2
 
 
-path = './out/gan/'
+def clean_images(path):
+	for root, dirs, files in os.walk(path):
+	    for index, name in enumerate(files):
+	        if name.endswith(('.png')):
+	            img = cv2.imread(os.path.join(root, name))
+	            img[img < 26] = 0
+	            cv2.imwrite(os.path.join(root, name), img)
+	            if index % 100 == 0:
+	            	print(f'Files completed: {index + 1}')
 
-for root, dirs, files in os.walk(path):
-    for name in files:
-        if name.endswith(('.png')):
-            img = cv2.imread(os.path.join(root, name))
-            img[img < 26] = 0
-            cv2.imwrite(os.path.join(root, name), img)
 
+clean_images(path = './out/gan/')
+clean_images(path = './out/cnn/')
