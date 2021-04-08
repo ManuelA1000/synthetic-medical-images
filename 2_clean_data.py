@@ -11,6 +11,7 @@ def clean_images(path):
 	            cv2.imwrite(os.path.join(root, name), img)
 	            if index % 100 == 0:
 	            	print(f'Files completed: {index + 1}')
+	            	print(f'Current location: {root}')
 
 
 clean_images(path = './out/gan/')
