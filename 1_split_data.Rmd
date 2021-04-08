@@ -61,7 +61,8 @@ split_5 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xl
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
     na_if('NULL.png') %>%
-    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
+    select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior) %>%
+    drop_na(posterior)
 ```
 
 
@@ -95,16 +96,15 @@ gan_preplus_plus <- split_1 %>%
     add_count() %>%
     slice(sample(row_number(), min(.$n))) %>%
     select(-n)
+
+val_split_3 <- split_3 %>%
+    drop_na(posterior) %>%
+    group_by(ground_truth) %>%
+    add_count() %>%
+    slice(sample(row_number(), min(.$n))) %>%
+    select(-n)
 ```
 
-
-
-```{r}
-dir_create('./out')
-write_csv(gan_no_plus, './out/gan_no_plus.csv')
-write_csv(gan_no_preplus, './out/gan_no_preplus.csv')
-write_csv(gan_preplus_plus, './out/gan_preplus_plus.csv')
-```
 
 
 
@@ -117,19 +117,40 @@ dir_create('./out/gan/no_preplus/Pre-Plus')
 
 dir_create('./out/gan/preplus_plus/Pre-Plus')
 dir_create('./out/gan/preplus_plus/Plus')
+
+dir_create('./out/cnn/train/synthetic/val/No')
+dir_create('./out/cnn/train/synthetic/val/Pre-Plus')
+dir_create('./out/cnn/train/synthetic/val/Plus')
+
+dir_create('./out/cnn/test/real/No')
+dir_create('./out/cnn/test/real/Pre-Plus')
+dir_create('./out/cnn/test/real/Plus')
+```
+
+
+```{r}
+write_csv(gan_no_plus, './out/gan_no_plus.csv')
+write_csv(gan_no_preplus, './out/gan_no_preplus.csv')
+write_csv(gan_preplus_plus, './out/gan_preplus_plus.csv')
 ```
 
 
 ```{r}
 src = '/media/coyner/850 EVO/irop_data/unet_segmentations'
 
-dst = './out/gan/no_plus'
-file_copy(paste(src, gan_no_plus$image_id, sep = '/'), paste(dst, gan_no_plus$ground_truth, gan_no_plus$image_id, sep = '/'), overwrite = TRUE)
+# dst = './out/gan/no_plus'
+# file_copy(paste(src, gan_no_plus$image_id, sep = '/'), paste(dst, gan_no_plus$ground_truth, gan_no_plus$image_id, sep = '/'), overwrite = TRUE)
+# 
+# dst = './out/gan/no_preplus'
+# file_copy(paste(src, gan_no_preplus$image_id, sep = '/'), paste(dst, gan_no_preplus$ground_truth, gan_no_preplus$image_id, sep = '/'), overwrite = TRUE)
+# 
+# dst = './out/gan/preplus_plus'
+# file_copy(paste(src, gan_preplus_plus$image_id, sep = '/'), paste(dst, gan_preplus_plus$ground_truth, gan_preplus_plus$image_id, sep = '/'), overwrite = TRUE)
 
-dst = './out/gan/no_preplus'
-file_copy(paste(src, gan_no_preplus$image_id, sep = '/'), paste(dst, gan_no_preplus$ground_truth, gan_no_preplus$image_id, sep = '/'), overwrite = TRUE)
+dst = './out/cnn/train/synthetic/val/'
+file_copy(paste(src, val_split_3$posterior, sep = '/'), paste(dst, val_split_3$ground_truth, val_split_3$posterior, sep = '/'), overwrite = TRUE)
 
-dst = './out/gan/preplus_plus'
-file_copy(paste(src, gan_preplus_plus$image_id, sep = '/'), paste(dst, gan_preplus_plus$ground_truth, gan_preplus_plus$image_id, sep = '/'), overwrite = TRUE)
+# dst = './out/cnn/test/real'
+# file_copy(paste(src, split_5$posterior, sep = '/'), paste(dst, split_5$ground_truth, split_5$posterior, sep = '/'), overwrite = TRUE)
 ```
 
