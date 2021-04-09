@@ -11,8 +11,11 @@ library(janitor)
 library(readxl)
 library(tools)
 library(fs)
+```
 
 
+
+```{r}
 set.seed(1337)
 ```
 
@@ -73,38 +76,41 @@ gan_no2plus <- split_1 %>%
     filter(ground_truth != 'Pre-Plus') %>%
     gather('view', 'image_id', posterior:superior) %>%
     drop_na() %>%
-    group_by(ground_truth) %>%
-    add_count() %>%
-    slice(sample(row_number(), min(.$n))) %>%
-    select(-n)
+    filter(ground_truth == 'Plus' | view == 'posterior')
+    # %>%
+    # group_by(ground_truth) %>%
+    # add_count() %>%
+    # slice(sample(row_number(), min(.$n))) %>%
+    # select(-n)
 
 gan_no2preplus <- split_1 %>%
     bind_rows(split_2) %>%
     filter(ground_truth != 'Plus') %>%
     gather('view', 'image_id', posterior:superior) %>%
     drop_na() %>%
-    group_by(ground_truth) %>%
-    add_count() %>%
-    slice(sample(row_number(), min(.$n))) %>%
-    select(-n)
+    filter(ground_truth == 'Pre-Plus' | view == 'posterior') # %>%
+    # group_by(ground_truth) %>%
+    # add_count() %>%
+    # slice(sample(row_number(), min(.$n))) %>%
+    # select(-n)
 
 gan_preplus2plus <- split_1 %>%
     bind_rows(split_2) %>%
     filter(ground_truth != 'No') %>%
     gather('view', 'image_id', posterior:superior) %>%
-    drop_na() %>%
-    group_by(ground_truth) %>%
-    add_count() %>%
-    slice(sample(row_number(), min(.$n))) %>%
-    select(-n)
+    drop_na() #%>%
+    # group_by(ground_truth) %>%
+    # add_count() %>%
+    # slice(sample(row_number(), min(.$n))) %>%
+    # select(-n)
 
 cnn_train <- split_3 %>%
     gather('view', 'image_id', posterior:superior) %>%
-    drop_na(image_id) %>%
-    group_by(ground_truth) %>%
-    add_count() %>%
-    slice(sample(row_number(), min(.$n))) %>%
-    select(-n)
+    drop_na(image_id) # %>%
+    # group_by(ground_truth) %>%
+    # add_count() %>%
+    # slice(sample(row_number(), min(.$n))) %>%
+    # select(-n)
 
 cnn_val <- split_4 %>%
     drop_na(posterior) %>%
@@ -128,17 +134,17 @@ dir_create('./out/gan/no2preplus/images/Pre-Plus')
 dir_create('./out/gan/preplus2plus/images/Pre-Plus')
 dir_create('./out/gan/preplus2plus/images/Plus')
 
-dir_create('./out/cnn/train/real_images/No')
-dir_create('./out/cnn/train/real_images/Pre-Plus')
-dir_create('./out/cnn/train/real_images/Plus')
+dir_create('./out/cnn/train/real/No')
+dir_create('./out/cnn/train/real/Pre-Plus')
+dir_create('./out/cnn/train/real/Plus')
 
-dir_create('./out/cnn/val/real_images/No')
-dir_create('./out/cnn/val/real_images/Pre-Plus')
-dir_create('./out/cnn/val/real_images/Plus')
+dir_create('./out/cnn/val/real/No')
+dir_create('./out/cnn/val/real/Pre-Plus')
+dir_create('./out/cnn/val/real/Plus')
 
-dir_create('./out/cnn/test/real_images/No')
-dir_create('./out/cnn/test/real_images/Pre-Plus')
-dir_create('./out/cnn/test/real_images/Plus')
+dir_create('./out/cnn/test/real/No')
+dir_create('./out/cnn/test/real/Pre-Plus')
+dir_create('./out/cnn/test/real/Plus')
 ```
 
 
@@ -164,13 +170,13 @@ file_copy(paste(src, gan_no2preplus$image_id, sep = '/'), paste(dst, gan_no2prep
 dst = './out/gan/preplus2plus/images'
 file_copy(paste(src, gan_preplus2plus$image_id, sep = '/'), paste(dst, gan_preplus2plus$ground_truth, gan_preplus2plus$image_id, sep = '/'), overwrite = TRUE)
 
-dst = './out/cnn/train/real_images'
+dst = './out/cnn/train/real'
 file_copy(paste(src, cnn_train$image_id, sep = '/'), paste(dst, cnn_train$ground_truth, cnn_train$image_id, sep = '/'), overwrite = TRUE)
 
-dst = './out/cnn/val/real_images'
+dst = './out/cnn/val/real'
 file_copy(paste(src, cnn_val$posterior, sep = '/'), paste(dst, cnn_val$ground_truth, cnn_val$posterior, sep = '/'), overwrite = TRUE)
 
-dst = './out/cnn/test/real_images'
+dst = './out/cnn/test/real'
 file_copy(paste(src, cnn_test$posterior, sep = '/'), paste(dst, cnn_test$ground_truth, cnn_test$posterior, sep = '/'), overwrite = TRUE)
 ```
 
@@ -187,15 +193,19 @@ file_move('./out/gan/preplus2plus/images/Pre-Plus', './out/gan/preplus2plus/imag
 file_move('./out/gan/preplus2plus/images/Plus', './out/gan/preplus2plus/images/trainB')
 
 
-file_move('./out/cnn/train/real_images/No', './out/cnn/train/real_images/1')
-file_move('./out/cnn/train/real_images/Pre-Plus', './out/cnn/train/real_images/2')
-file_move('./out/cnn/train/real_images/Plus', './out/cnn/train/real_images/3')
+file_move('./out/cnn/train/real/No', './out/cnn/train/real/1')
+file_move('./out/cnn/train/real/Pre-Plus', './out/cnn/train/real/2')
+file_move('./out/cnn/train/real/Plus', './out/cnn/train/real/3')
 
-file_move('./out/cnn/val/real_images/No', './out/cnn/val/real_images/1')
-file_move('./out/cnn/val/real_images/Pre-Plus', './out/cnn/val/real_images/2')
-file_move('./out/cnn/val/real_images/Plus', './out/cnn/val/real_images/3')
+file_move('./out/cnn/val/real/No', './out/cnn/val/real/1')
+file_move('./out/cnn/val/real/Pre-Plus', './out/cnn/val/real/2')
+file_move('./out/cnn/val/real/Plus', './out/cnn/val/real/3')
 
-file_move('./out/cnn/test/real_images/No', './out/cnn/test/real_images/1')
-file_move('./out/cnn/test/real_images/Pre-Plus', './out/cnn/test/real_images/2')
-file_move('./out/cnn/test/real_images/Plus', './out/cnn/test/real_images/3')
+file_move('./out/cnn/test/real/No', './out/cnn/test/real/1')
+file_move('./out/cnn/test/real/Pre-Plus', './out/cnn/test/real/2')
+file_move('./out/cnn/test/real/Plus', './out/cnn/test/real/3')
 ```
+
+
+## IMPORTANT: Run 2_clean_images.py before training models!
+
