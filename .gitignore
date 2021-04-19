@@ -7,3 +7,4 @@ cycle_gan/checkpoints/
 cycle_gan/results/
 .ipynb_checkpoints/
 *.pyc
+.DS_Store
