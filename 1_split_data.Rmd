@@ -22,49 +22,49 @@ set.seed(1337)
 
 
 ```{r}
-all_irop <- read_csv('/media/coyner/850 EVO/irop_data/irop_07092020.csv') %>%
+all_irop <- read_csv('/Volumes/External Storage/irop_data/irop_07092020.csv') %>%
     clean_names() %>%
     filter(reader == 'goldenstandardreading@ohsu.edu') %>%
     mutate(session = str_remove_all(session, '[ a-zA-Z]'),
-           posterior = paste(file_path_sans_ext(basename(posterior)), '.png', sep = ''),
-           nasal = paste(file_path_sans_ext(basename(nasal)), '.png', sep = ''),
-           temporal = paste(file_path_sans_ext(basename(temporal)), '.png', sep = ''),
-           inferior = paste(file_path_sans_ext(basename(inferior)), '.png', sep = ''),
-           superior = paste(file_path_sans_ext(basename(superior)), '.png', sep = ''))
+           posterior = paste(file_path_sans_ext(basename(posterior)), '.bmp', sep = ''),
+           nasal = paste(file_path_sans_ext(basename(nasal)), '.bmp', sep = ''),
+           temporal = paste(file_path_sans_ext(basename(temporal)), '.bmp', sep = ''),
+           inferior = paste(file_path_sans_ext(basename(inferior)), '.bmp', sep = ''),
+           superior = paste(file_path_sans_ext(basename(superior)), '.bmp', sep = ''))
 
-split_1 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 1) %>%
+split_1 <- read_excel('/Volumes/External Storage/irop_data/all_splits_master_file.xlsx', sheet = 1) %>%
     clean_names() %>%
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
-    na_if('NULL.png') %>%
+    na_if('NULL.bmp') %>%
     select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
 
-split_2 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 2) %>%
+split_2 <- read_excel('/Volumes/External Storage/irop_data/all_splits_master_file.xlsx', sheet = 2) %>%
     clean_names() %>%
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
-    na_if('NULL.png') %>%
+    na_if('NULL.bmp') %>%
     select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
 
-split_3 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 3) %>%
+split_3 <- read_excel('/Volumes/External Storage/irop_data/all_splits_master_file.xlsx', sheet = 3) %>%
     clean_names() %>%
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
-    na_if('NULL.png') %>%
+    na_if('NULL.bmp') %>%
     select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
 
-split_4 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 4) %>%
+split_4 <- read_excel('/Volumes/External Storage/irop_data/all_splits_master_file.xlsx', sheet = 4) %>%
     clean_names() %>%
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
-    na_if('NULL.png') %>%
+    na_if('NULL.bmp') %>%
     select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior)
 
-split_5 <- read_excel('/media/coyner/850 EVO/irop_data/all_splits_master_file.xlsx', sheet = 5) %>%
+split_5 <- read_excel('/Volumes/External Storage/irop_data/all_splits_master_file.xlsx', sheet = 5) %>%
     clean_names() %>%
     separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
     inner_join(all_irop, by = c('subject_id', 'eye', 'session')) %>%
-    na_if('NULL.png') %>%
+    na_if('NULL.bmp') %>%
     select(subject_id, session, eye, ground_truth, posterior, nasal, temporal, inferior, superior) %>%
     drop_na(posterior)
 ```
@@ -159,7 +159,7 @@ write_csv(cnn_test, './out/cnn/test/cnn_test.csv')
 
 
 ```{r}
-src = '/media/coyner/850 EVO/irop_data/unet_segmentations'
+src = '/Volumes/External Storage/irop_data/segmentations'
 
 dst = './out/gan/no2plus/images'
 file_copy(paste(src, gan_no2plus$image_id, sep = '/'), paste(dst, gan_no2plus$ground_truth, gan_no2plus$image_id, sep = '/'), overwrite = TRUE)
