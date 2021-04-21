@@ -110,16 +110,16 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
             # deep copy the model
-#             if phase == 'val' and epoch_acc > best_acc:
-            if phase == 'val' and epoch_loss < best_loss:
+            if phase == 'val' and epoch_acc > best_acc:
+            # if phase == 'val' and epoch_loss < best_loss:
                 best_acc = epoch_acc
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
                 torch.save(model.state_dict(), 'cnn/model.pth')
                 print('===MODEL SAVED===')
                 
-#             elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
-            elif phase == 'val' and epoch_loss == best_loss and epoch_acc > best_acc:
+            elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
+            # elif phase == 'val' and epoch_loss == best_loss and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
