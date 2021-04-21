@@ -4,6 +4,7 @@ Use a GAN to generate synthetic images of infant retinas with normal, pre-plus, 
 
 
 ## 5 Splits
-- Split 1 + 2 + 3: Train GAN
-- Split 4: Generate data from GANs and train CNN
-- Split 5: Evaluate CNN
+- Split 1 + 2: Train GAN
+- Split 3: Generate data from GANs and train CNN
+- Split 4: Evaluate CNN during training
+- Split 5: Test CNN
