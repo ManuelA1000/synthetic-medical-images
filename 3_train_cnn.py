@@ -222,11 +222,28 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = os.cpu_count()
-MODEL_NAME = 'vgg'
+MODEL_NAME = 'inception'
 BATCH_SIZE = 32
-NUM_EPOCHS = 100
-IMAGE_SIZE = 224
+NUM_EPOCHS = 50
+IMAGE_SIZE = 299
 IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
+TRAIN_DIR = 'cnn/train/synthetic/'
+VAL_DIR = 'cnn/val/real/'
+TEST_DIR = 'cnn/test/real/'
+
+print()
+print(f'Train Directory: {TRAIN_DIR}')
+print(f'Validation Directory: {VAL_DIR}')
+print(f'Test Directory: {TEST_DIR}')
+print()
+print(f'Device: {DEVICE}')
+print()
+print(f'Model: {MODEL_NAME}')
+print(f'Num Workers: {NUM_WORKERS}')
+print(f'Num Epochs: {NUM_EPOCHS}')
+print(f'Batch Size: {BATCH_SIZE}')
+print(f'Image Size: {IMAGE_SIZE}')
+print()
 
 
 train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
@@ -238,63 +255,52 @@ train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
                                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
                                       ])
 
-val_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
+val_test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
                                      transforms.ToTensor(),
                                      transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
                                       ])
 
 
-train_dir = 'cnn/train/synthetic/'
-val_dir = 'cnn/val/real/'
 
-train_dataset = datasets.ImageFolder(train_dir, train_transforms)
-val_dataset = datasets.ImageFolder(val_dir, val_transforms)
+train_dataset = datasets.ImageFolder(TRAIN_DIR, train_transforms)
+val_dataset = datasets.ImageFolder(VAL_DIR, val_test_transforms)
+test_datasets = datasets.ImageFolder(TEST_DIR, val_test_transforms)
+
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+test_dataloader = torch.utils.data.DataLoader(test_datasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+
+
 
 class_names = train_dataset.classes
 num_classes = len(class_names)
-
 
 model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
 model_ft = model_ft.to(DEVICE)
 
 params_to_update = model_ft.parameters()
-print("Params to learn:")
-for name,param in model_ft.named_parameters():
-        if param.requires_grad == True:
-            print("\t",name)
-
-optimizer_ft = optim.SGD(params_to_update, lr=0.001)#, momentum=0.9)
-# scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=10, gamma=0.5, last_epoch=-1, verbose=True)
+optimizer_ft = optim.SGD(params_to_update, lr=0.001)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
-
-# weight = torch.tensor([4887/916, 4887/4339, 4887/4887]).to(DEVICE)
-criterion = nn.CrossEntropyLoss()# weight=weight)
-
-
+criterion = nn.CrossEntropyLoss()
 
 model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criterion, optimizer_ft,
                              device=DEVICE, num_epochs=NUM_EPOCHS, is_inception=(MODEL_NAME=="inception"), scheduler=scheduler)
 
 
-test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
-                                      transforms.ToTensor(),
-                                      transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-                                     ])
-
-test_dir = 'cnn/test/real/'
-test_datasets = datasets.ImageFolder(test_dir, test_transforms)
-test_dataloader = torch.utils.data.DataLoader(test_datasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
-
 
 model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
 model_ft = model_ft.to(DEVICE)
 model_ft.load_state_dict(torch.load('cnn/model.pth'))
-model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
-                            nn.Softmax(dim=1))
 
+
+## VGG11 + BN
+# model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
+#                             nn.Softmax(dim=1))
+
+## InceptionV3
+model_ft.fc = nn.Sequential(model_ft.fc,
+                            nn.Softmax(dim=1))
 
 model_ft.eval()
 
