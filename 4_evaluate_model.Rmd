@@ -33,7 +33,7 @@ pred <- prediction(probs$p_no, probs$labels_no_rest)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
-title <- paste('ROC: No vs Pre-Plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+title <- paste('ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
 plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
@@ -45,7 +45,7 @@ pred <- prediction(probs$p_plus, probs$labels_plus_rest)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
-title <- paste('ROC: Plus vs Normal/Pre-Plus [AUC = ', round(auc, 3), ']', sep = '')
+title <- paste('ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
 plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
@@ -64,7 +64,7 @@ pred <- prediction(probs$p_no, probs$labels_no_rest)
 perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
-title <- paste('PR: No vs Pre-Plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
 plot(perf, main = title , colorize = T, ylim=c(0,1))
 abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
 ```
@@ -76,7 +76,7 @@ pred <- prediction(probs$p_plus, probs$labels_plus_rest)
 perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
-title <- paste('PR: Plus vs Normal/Pre-Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
+title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
 abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
 ```
