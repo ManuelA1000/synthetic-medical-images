@@ -115,7 +115,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
                 best_acc = epoch_acc
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(), 'cnn/model.pth')
+                torch.save(model.state_dict(), './out/cnn/model.pth')
                 print('===MODEL SAVED===')
                 
             elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
@@ -123,7 +123,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
                 best_acc = epoch_acc
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(), 'cnn/model.pth')
+                torch.save(model.state_dict(), './out/cnn/model.pth')
                 print('===MODEL SAVED===')
                 
             if phase == 'val': 
@@ -224,12 +224,14 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = os.cpu_count()
 MODEL_NAME = 'inception'
 BATCH_SIZE = 32
-NUM_EPOCHS = 50
+NUM_EPOCHS = 100
 IMAGE_SIZE = 299
 IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
-TRAIN_DIR = 'cnn/train/synthetic/'
-VAL_DIR = 'cnn/val/real/'
-TEST_DIR = 'cnn/test/real/'
+TRAIN_DIR = './out/cnn/train/synthetic/'
+VAL_DIR = './out/cnn/val/real/'
+TEST_DIR = './out/cnn/test/real/'
+
+learning_rate = 0.0001
 
 print()
 print(f'Train Directory: {TRAIN_DIR}')
@@ -239,6 +241,7 @@ print()
 print(f'Device: {DEVICE}')
 print()
 print(f'Model: {MODEL_NAME}')
+print(f'Initial Learning Rate: {learning_rate}')
 print(f'Num Workers: {NUM_WORKERS}')
 print(f'Num Epochs: {NUM_EPOCHS}')
 print(f'Batch Size: {BATCH_SIZE}')
@@ -264,12 +267,12 @@ val_test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
 
 train_dataset = datasets.ImageFolder(TRAIN_DIR, train_transforms)
 val_dataset = datasets.ImageFolder(VAL_DIR, val_test_transforms)
-test_datasets = datasets.ImageFolder(TEST_DIR, val_test_transforms)
+test_dataset = datasets.ImageFolder(TEST_DIR, val_test_transforms)
 
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
-test_dataloader = torch.utils.data.DataLoader(test_datasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 
 
@@ -280,7 +283,7 @@ model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=
 model_ft = model_ft.to(DEVICE)
 
 params_to_update = model_ft.parameters()
-optimizer_ft = optim.SGD(params_to_update, lr=0.001)
+optimizer_ft = optim.SGD(params_to_update, lr=learning_rate)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
 criterion = nn.CrossEntropyLoss()
 
@@ -291,7 +294,7 @@ model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criteri
 
 model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
 model_ft = model_ft.to(DEVICE)
-model_ft.load_state_dict(torch.load('cnn/model.pth'))
+model_ft.load_state_dict(torch.load('./out/cnn/model.pth'))
 
 
 ## VGG11 + BN
@@ -334,6 +337,6 @@ epoch_acc = running_corrects.double() / len(test_dataloader.dataset)
 
 print('{} Loss: {:.4f} Acc: {:.4f}'.format('test', epoch_loss, epoch_acc))
 
-np.savetxt('cnn/all_preds.csv', all_preds)
-np.savetxt('cnn/all_labels.csv', all_labels)
-np.savetxt('cnn/probs.csv', probs, delimiter =", ")
+np.savetxt('./out/cnn/all_preds.csv', all_preds)
+np.savetxt('./out/cnn/all_labels.csv', all_labels)
+np.savetxt('./out/cnn/probs.csv', probs, delimiter =", ")
