@@ -230,6 +230,7 @@ IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
 TRAIN_DIR = './out/cnn/train/synthetic/'
 VAL_DIR = './out/cnn/val/real/'
 TEST_DIR = './out/cnn/test/real/'
+SET_100_DIR = './out/cnn/test/set_100/'
 
 learning_rate = 0.001
 
@@ -268,11 +269,14 @@ val_test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
 train_dataset = datasets.ImageFolder(TRAIN_DIR, train_transforms)
 val_dataset = datasets.ImageFolder(VAL_DIR, val_test_transforms)
 test_dataset = datasets.ImageFolder(TEST_DIR, val_test_transforms)
+set_100_dataset = datasets.ImageFolder(SET_100_DIR, val_test_transforms)
+
 
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+set_100_dataloader = torch.utils.data.DataLoader(set_100_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 
 
@@ -337,6 +341,35 @@ epoch_acc = running_corrects.double() / len(test_dataloader.dataset)
 
 print('{} Loss: {:.4f} Acc: {:.4f}'.format('test', epoch_loss, epoch_acc))
 
-np.savetxt('./out/cnn/all_preds.csv', all_preds)
-np.savetxt('./out/cnn/all_labels.csv', all_labels)
-np.savetxt('./out/cnn/probs.csv', probs, delimiter =", ")
+np.savetxt('./out/cnn/test_preds.csv', all_preds)
+np.savetxt('./out/cnn/test_labels.csv', all_labels)
+np.savetxt('./out/cnn/test_probs.csv', probs, delimiter =", ")
+
+
+
+for inputs, labels in set_100_dataloader:
+    inputs = inputs.to(DEVICE)
+    labels = labels.to(DEVICE)
+
+    optimizer_ft.zero_grad()
+
+    with torch.set_grad_enabled(False):
+        outputs = model_ft(inputs)
+        loss = criterion(outputs, labels)
+        
+        probs.extend(outputs.detach().cpu().tolist())
+        all_labels.extend(labels.detach().cpu().tolist())
+        _, preds = torch.max(outputs, 1)
+        all_preds.extend(preds.detach().cpu().tolist())
+
+    running_loss += loss.item() * inputs.size(0)
+    running_corrects += torch.sum(preds == labels.data)
+
+epoch_loss = running_loss / len(set_100_dataloader.dataset)
+epoch_acc = running_corrects.double() / len(set_100_dataloader.dataset)
+
+print('{} Loss: {:.4f} Acc: {:.4f}'.format('test', epoch_loss, epoch_acc))
+
+np.savetxt('./out/cnn/set_100_preds.csv', all_preds)
+np.savetxt('./out/cnn/set_100_labels.csv', all_labels)
+np.savetxt('./out/cnn/set_100_probs.csv', probs, delimiter =", ")
