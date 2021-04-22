@@ -159,7 +159,7 @@ write_csv(cnn_test, './out/cnn/test/cnn_test.csv')
 
 
 ```{r}
-src = '/Volumes/External Storage/irop_data/segmentations'
+src = '/Volumes/Storage/irop_data/segmentations'
 
 dst = './out/gan/no2plus/images'
 file_copy(paste(src, gan_no2plus$image_id, sep = '/'), paste(dst, gan_no2plus$ground_truth, gan_no2plus$image_id, sep = '/'), overwrite = TRUE)
@@ -208,4 +208,3 @@ file_move('./out/cnn/test/real/Plus', './out/cnn/test/real/3')
 
 
 ## IMPORTANT: Run 2_clean_images.py before training models!
-
