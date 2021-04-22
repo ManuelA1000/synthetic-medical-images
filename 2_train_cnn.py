@@ -173,7 +173,7 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
     elif model_name == "vgg":
         """ VGG11_bn
         """
-        model_ft = models.vgg11_bn(pretrained=use_pretrained)
+        model_ft = models.vgg13_bn(pretrained=use_pretrained)
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.classifier[6].in_features
         model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
@@ -222,16 +222,16 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = os.cpu_count()
-MODEL_NAME = 'inception'
+MODEL_NAME = 'vgg'
 BATCH_SIZE = 32
 NUM_EPOCHS = 100
-IMAGE_SIZE = 299
+IMAGE_SIZE = 224
 IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
 TRAIN_DIR = './out/cnn/train/synthetic/'
 VAL_DIR = './out/cnn/val/real/'
 TEST_DIR = './out/cnn/test/real/'
 
-learning_rate = 0.0001
+learning_rate = 0.001
 
 print()
 print(f'Train Directory: {TRAIN_DIR}')
@@ -298,12 +298,12 @@ model_ft.load_state_dict(torch.load('./out/cnn/model.pth'))
 
 
 ## VGG11 + BN
-# model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
-#                             nn.Softmax(dim=1))
+model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
+                            nn.Softmax(dim=1))
 
 ## InceptionV3
-model_ft.fc = nn.Sequential(model_ft.fc,
-                            nn.Softmax(dim=1))
+# model_ft.fc = nn.Sequential(model_ft.fc,
+#                             nn.Softmax(dim=1))
 
 model_ft.eval()
 
