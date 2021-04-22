@@ -32,7 +32,7 @@ def clean_gan(path):
 			if name.endswith(('.png')):
 				img = cv2.imread(os.path.join(root, name))
 				img[img < 26] = 0
-				cv2.imwrite(os.path.join(root, png_name), img)
+				cv2.imwrite(os.path.join(root, name), img)
 
 
 
