@@ -14,6 +14,7 @@ import os
 import copy
 
 
+
 def visualize_model(model, dataloaders, num_images=6):
     was_training = model.training
     model.eval()
@@ -55,35 +56,23 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
         print(f'Epoch {epoch + 1}/{num_epochs}')
         print('-' * 10)
 
-        # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
-                model.train()  # Set model to training mode
+                model.train()
                 dataloader = train_dataloader
             else:
-                model.eval()   # Set model to evaluate mode
+                model.eval()
                 dataloader = val_dataloader
 
             running_loss = 0.0
             running_corrects = 0
 
-            # Iterate over data.
             for inputs, labels in dataloader:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-
-                # zero the parameter gradients
                 optimizer.zero_grad()
-
-                # forward
-                # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
-                    # Get model outputs and calculate loss
-                    # Special case for inception because in training it has an auxiliary output. In train
-                    #   mode we calculate the loss by summing the final output and the auxiliary output
-                    #   but in testing we only consider the final output.
                     if is_inception and phase == 'train':
-                        # From https://discuss.pytorch.org/t/how-to-optimize-inception-model-with-auxiliary-classifiers/7958
                         outputs, aux_outputs = model(inputs)
                         loss1 = criterion(outputs, labels)
                         loss2 = criterion(aux_outputs, labels)
@@ -94,13 +83,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
 
                     _, preds = torch.max(outputs, 1)
 
-                    # backward + optimize only if in training phase
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        
-                    
-                # statistics
+                           
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
@@ -109,7 +95,6 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
-            # deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
             # if phase == 'val' and epoch_loss < best_loss:
                 best_acc = epoch_acc
@@ -133,12 +118,42 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
         print()
 
     time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:4f}')
-
-    # load best model weights
     model.load_state_dict(best_model_wts)
     return model, val_acc_history
+
+
+def test_model(model, optimizer, criterion, dataloader, prefix):
+	model.eval()
+	probs = []
+	all_preds = []
+	all_labels = []
+	running_loss = 0.0
+	running_corrects = 0	
+
+	for inputs, labels in dataloader:
+	    inputs = inputs.to(DEVICE)
+	    labels = labels.to(DEVICE)
+	    optimizer.zero_grad()
+	    with torch.set_grad_enabled(False):
+	        outputs = model(inputs)
+	        loss = criterion(outputs, labels)
+	        probs.extend(outputs.detach().cpu().tolist())
+	        all_labels.extend(labels.detach().cpu().tolist())
+	        _, preds = torch.max(outputs, 1)
+	        all_preds.extend(preds.detach().cpu().tolist())
+
+	    running_loss += loss.item() * inputs.size(0)
+	    running_corrects += torch.sum(preds == labels.data)
+
+	epoch_loss = running_loss / len(dataloader.dataset)
+	epoch_acc = running_corrects.double() / len(dataloader.dataset)
+	print(f'{prefix} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+
+	np.savetxt(f'./out/cnn/{prefix}_preds.csv', all_preds)
+	np.savetxt(f'./out/cnn/{prefix}_labels.csv', all_labels)
+	np.savetxt(f'./out/cnn/{prefix}_probs.csv', probs, delimiter =", ")
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -147,67 +162,33 @@ def set_parameter_requires_grad(model, feature_extracting):
             param.requires_grad = False
 
 
-
 def initialize_model(model_name, num_classes, feature_extract=False, use_pretrained=True):
     model_ft = None
     input_size = 0
 
     if model_name == "resnet":
-        """ Resnet18
-        """
         model_ft = models.resnet18(pretrained=use_pretrained)
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs, num_classes)
         input_size = 224
 
-    elif model_name == "alexnet":
-        """ Alexnet
-        """
-        model_ft = models.alexnet(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.classifier[6].in_features
-        model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
-        input_size = 224
 
     elif model_name == "vgg":
-        """ VGG11_bn
-        """
         model_ft = models.vgg13_bn(pretrained=use_pretrained)
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.classifier[6].in_features
         model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
-        print(model_ft)
         input_size = 224
 
-    elif model_name == "squeezenet":
-        """ Squeezenet
-        """
-        model_ft = models.squeezenet1_0(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        model_ft.classifier[1] = nn.Conv2d(512, num_classes, kernel_size=(1,1), stride=(1,1))
-        model_ft.num_classes = num_classes
-        input_size = 224
-
-    elif model_name == "densenet":
-        """ Densenet
-        """
-        model_ft = models.densenet121(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.classifier.in_features
-        model_ft.classifier = nn.Linear(num_ftrs, num_classes)
-        input_size = 224
 
     elif model_name == "inception":
-        """ Inception v3
-        Be careful, expects (299,299) sized images and has auxiliary output
-        """
         model_ft = models.inception_v3(pretrained=use_pretrained)
         set_parameter_requires_grad(model_ft, feature_extract)
-        # Handle the auxilary net
+
         num_ftrs = model_ft.AuxLogits.fc.in_features
         model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
-        # Handle the primary net
+
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs,num_classes)
         input_size = 299
@@ -221,10 +202,10 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-NUM_WORKERS = os.cpu_count()
+NUM_WORKERS = 16 #os.cpu_count()
 MODEL_NAME = 'vgg'
 BATCH_SIZE = 32
-NUM_EPOCHS = 100
+NUM_EPOCHS = 50
 IMAGE_SIZE = 224
 IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
 TRAIN_DIR = './out/cnn/train/synthetic/'
@@ -233,22 +214,6 @@ TEST_DIR = './out/cnn/test/real/'
 SET_100_DIR = './out/cnn/test/set_100/'
 
 learning_rate = 0.001
-
-print()
-print(f'Train Directory: {TRAIN_DIR}')
-print(f'Validation Directory: {VAL_DIR}')
-print(f'Test Directory: {TEST_DIR}')
-print()
-print(f'Device: {DEVICE}')
-print()
-print(f'Model: {MODEL_NAME}')
-print(f'Initial Learning Rate: {learning_rate}')
-print(f'Num Workers: {NUM_WORKERS}')
-print(f'Num Epochs: {NUM_EPOCHS}')
-print(f'Batch Size: {BATCH_SIZE}')
-print(f'Image Size: {IMAGE_SIZE}')
-print()
-
 
 train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
                                        transforms.RandomResizedCrop(IMAGE_SIZE),
@@ -291,9 +256,26 @@ optimizer_ft = optim.SGD(params_to_update, lr=learning_rate)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
 criterion = nn.CrossEntropyLoss()
 
+
+print()
+print(f'Train Directory: {TRAIN_DIR}')
+print(f'Validation Directory: {VAL_DIR}')
+print(f'Test Directory: {TEST_DIR}')
+print()
+print(f'Device: {DEVICE}')
+print()
+print(f'Model: {MODEL_NAME}')
+print(f'Initial Learning Rate: {learning_rate}')
+print(f'Num Workers: {NUM_WORKERS}')
+print(f'Num Epochs: {NUM_EPOCHS}')
+print(f'Batch Size: {BATCH_SIZE}')
+print(f'Image Size: {IMAGE_SIZE}')
+print()
+print(model_ft)
+print()
+
 model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criterion, optimizer_ft,
                              device=DEVICE, num_epochs=NUM_EPOCHS, is_inception=(MODEL_NAME=="inception"), scheduler=scheduler)
-
 
 
 model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
@@ -309,67 +291,7 @@ model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
 # model_ft.fc = nn.Sequential(model_ft.fc,
 #                             nn.Softmax(dim=1))
 
-model_ft.eval()
 
-running_loss = 0.0
-running_corrects = 0
+test_model(model_ft, optimizer_ft, criterion, test_dataloader, 'test')
 
-probs = []
-all_preds = []
-all_labels = []
-
-for inputs, labels in test_dataloader:
-    inputs = inputs.to(DEVICE)
-    labels = labels.to(DEVICE)
-
-    optimizer_ft.zero_grad()
-
-    with torch.set_grad_enabled(False):
-        outputs = model_ft(inputs)
-        loss = criterion(outputs, labels)
-        
-        probs.extend(outputs.detach().cpu().tolist())
-        all_labels.extend(labels.detach().cpu().tolist())
-        _, preds = torch.max(outputs, 1)
-        all_preds.extend(preds.detach().cpu().tolist())
-
-    running_loss += loss.item() * inputs.size(0)
-    running_corrects += torch.sum(preds == labels.data)
-
-epoch_loss = running_loss / len(test_dataloader.dataset)
-epoch_acc = running_corrects.double() / len(test_dataloader.dataset)
-
-print('{} Loss: {:.4f} Acc: {:.4f}'.format('test', epoch_loss, epoch_acc))
-
-np.savetxt('./out/cnn/test_preds.csv', all_preds)
-np.savetxt('./out/cnn/test_labels.csv', all_labels)
-np.savetxt('./out/cnn/test_probs.csv', probs, delimiter =", ")
-
-
-
-for inputs, labels in set_100_dataloader:
-    inputs = inputs.to(DEVICE)
-    labels = labels.to(DEVICE)
-
-    optimizer_ft.zero_grad()
-
-    with torch.set_grad_enabled(False):
-        outputs = model_ft(inputs)
-        loss = criterion(outputs, labels)
-        
-        probs.extend(outputs.detach().cpu().tolist())
-        all_labels.extend(labels.detach().cpu().tolist())
-        _, preds = torch.max(outputs, 1)
-        all_preds.extend(preds.detach().cpu().tolist())
-
-    running_loss += loss.item() * inputs.size(0)
-    running_corrects += torch.sum(preds == labels.data)
-
-epoch_loss = running_loss / len(set_100_dataloader.dataset)
-epoch_acc = running_corrects.double() / len(set_100_dataloader.dataset)
-
-print('{} Loss: {:.4f} Acc: {:.4f}'.format('test', epoch_loss, epoch_acc))
-
-np.savetxt('./out/cnn/set_100_preds.csv', all_preds)
-np.savetxt('./out/cnn/set_100_labels.csv', all_labels)
-np.savetxt('./out/cnn/set_100_probs.csv', probs, delimiter =", ")
+test_model(model_ft, optimizer_ft, criterion, set_100_dataloader, 'set_100')
