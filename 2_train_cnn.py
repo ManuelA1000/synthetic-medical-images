@@ -167,10 +167,13 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 	input_size = 0
 
 	if model_name == "resnet":
-		model_ft = models.resnet18(pretrained=use_pretrained)
+		model_ft = models.resnet50(pretrained=use_pretrained)
 		set_parameter_requires_grad(model_ft, feature_extract)
 		num_ftrs = model_ft.fc.in_features
-		model_ft.fc = nn.Linear(num_ftrs, num_classes)
+		model_ft.fc = nn.Sequential(nn.Linear(num_ftrs, 1024),
+									nn.ReLU(inplace=True),
+									nn.Dropout(),
+									nn.Linear(1024, num_classes))
 		input_size = 224
 
 
@@ -212,7 +215,7 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = 16 #os.cpu_count()
-MODEL_NAME = 'vgg19'
+MODEL_NAME = 'resnet'
 BATCH_SIZE = 32
 NUM_EPOCHS = 50
 IMAGE_SIZE = 224
@@ -222,7 +225,7 @@ VAL_DIR = './out/cnn/val/real/'
 TEST_DIR = './out/cnn/test/real/'
 SET_100_DIR = './out/cnn/test/set_100/'
 
-learning_rate = 0.001
+learning_rate = 0.0001
 
 train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
 									   transforms.RandomResizedCrop(IMAGE_SIZE),
