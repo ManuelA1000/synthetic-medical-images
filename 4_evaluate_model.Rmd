@@ -13,16 +13,16 @@ library(caret)
 
 
 ```{r}
-probs <- read_csv('./out/cnn/test_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/test_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+probs <- read_csv('./out/cnn/vgg13/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg13/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg13/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 
 
-set_100_probs <- read_csv('./out/cnn/set_100_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/set_100_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+set_100_probs <- read_csv('./out/cnn/vgg13/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg13/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg13/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
