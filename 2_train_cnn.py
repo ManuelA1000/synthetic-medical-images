@@ -16,112 +16,112 @@ import copy
 
 
 def visualize_model(model, dataloaders, num_images=6):
-    was_training = model.training
-    model.eval()
-    images_so_far = 0
-    fig = plt.figure()
+	was_training = model.training
+	model.eval()
+	images_so_far = 0
+	fig = plt.figure()
 
-    with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloaders['val']):
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+	with torch.no_grad():
+		for i, (inputs, labels) in enumerate(dataloaders['val']):
+			inputs = inputs.to(device)
+			labels = labels.to(device)
 
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
+			outputs = model(inputs)
+			_, preds = torch.max(outputs, 1)
 
-            for j in range(inputs.size()[0]):
-                images_so_far += 1
-                ax = plt.subplot(num_images//2, 2, images_so_far)
-                ax.axis('off')
-                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
-                imshow(inputs.cpu().data[j])
+			for j in range(inputs.size()[0]):
+				images_so_far += 1
+				ax = plt.subplot(num_images//2, 2, images_so_far)
+				ax.axis('off')
+				ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+				imshow(inputs.cpu().data[j])
 
-                if images_so_far == num_images:
-                    model.train(mode=was_training)
-                    return
-        model.train(mode=was_training)
+				if images_so_far == num_images:
+					model.train(mode=was_training)
+					return
+		model.train(mode=was_training)
 
 
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, device, num_epochs=25, is_inception=False, scheduler=None):
-    since = time.time()
+	since = time.time()
 
-    val_acc_history = []
+	val_acc_history = []
 
-    best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0
-    best_loss = 9999.0
+	best_model_wts = copy.deepcopy(model.state_dict())
+	best_acc = 0.0
+	best_loss = 9999.0
 
-    for epoch in range(num_epochs):
-        print(f'Epoch {epoch + 1}/{num_epochs}')
-        print('-' * 10)
+	for epoch in range(num_epochs):
+		print(f'Epoch {epoch + 1}/{num_epochs}')
+		print('-' * 10)
 
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                model.train()
-                dataloader = train_dataloader
-            else:
-                model.eval()
-                dataloader = val_dataloader
+		for phase in ['train', 'val']:
+			if phase == 'train':
+				model.train()
+				dataloader = train_dataloader
+			else:
+				model.eval()
+				dataloader = val_dataloader
 
-            running_loss = 0.0
-            running_corrects = 0
+			running_loss = 0.0
+			running_corrects = 0
 
-            for inputs, labels in dataloader:
-                inputs = inputs.to(device)
-                labels = labels.to(device)
-                optimizer.zero_grad()
-                with torch.set_grad_enabled(phase == 'train'):
-                    if is_inception and phase == 'train':
-                        outputs, aux_outputs = model(inputs)
-                        loss1 = criterion(outputs, labels)
-                        loss2 = criterion(aux_outputs, labels)
-                        loss = loss1 + 0.4*loss2
-                    else:
-                        outputs = model(inputs)
-                        loss = criterion(outputs, labels)
+			for inputs, labels in dataloader:
+				inputs = inputs.to(device)
+				labels = labels.to(device)
+				optimizer.zero_grad()
+				with torch.set_grad_enabled(phase == 'train'):
+					if is_inception and phase == 'train':
+						outputs, aux_outputs = model(inputs)
+						loss1 = criterion(outputs, labels)
+						loss2 = criterion(aux_outputs, labels)
+						loss = loss1 + 0.4*loss2
+					else:
+						outputs = model(inputs)
+						loss = criterion(outputs, labels)
 
-                    _, preds = torch.max(outputs, 1)
+					_, preds = torch.max(outputs, 1)
 
-                    if phase == 'train':
-                        loss.backward()
-                        optimizer.step()
-                           
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
+					if phase == 'train':
+						loss.backward()
+						optimizer.step()
+						   
+				running_loss += loss.item() * inputs.size(0)
+				running_corrects += torch.sum(preds == labels.data)
 
-            epoch_loss = running_loss / len(dataloader.dataset)
-            epoch_acc = running_corrects.double() / len(dataloader.dataset)
+			epoch_loss = running_loss / len(dataloader.dataset)
+			epoch_acc = running_corrects.double() / len(dataloader.dataset)
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+			print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
-            if phase == 'val' and epoch_acc > best_acc:
-            # if phase == 'val' and epoch_loss < best_loss:
-                best_acc = epoch_acc
-                best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(), './out/cnn/model.pth')
-                print('===MODEL SAVED===')
-                
-            elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
-            # elif phase == 'val' and epoch_loss == best_loss and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_loss = epoch_loss
-                best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(), './out/cnn/model.pth')
-                print('===MODEL SAVED===')
-                
-            if phase == 'val': 
-                val_acc_history.append(epoch_acc)
-                scheduler.step(epoch_loss)                
+			if phase == 'val' and epoch_acc > best_acc:
+			# if phase == 'val' and epoch_loss < best_loss:
+				best_acc = epoch_acc
+				best_loss = epoch_loss
+				best_model_wts = copy.deepcopy(model.state_dict())
+				torch.save(model.state_dict(), './out/cnn/model.pth')
+				print('===MODEL SAVED===')
+				
+			elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
+			# elif phase == 'val' and epoch_loss == best_loss and epoch_acc > best_acc:
+				best_acc = epoch_acc
+				best_loss = epoch_loss
+				best_model_wts = copy.deepcopy(model.state_dict())
+				torch.save(model.state_dict(), './out/cnn/model.pth')
+				print('===MODEL SAVED===')
+				
+			if phase == 'val': 
+				val_acc_history.append(epoch_acc)
+				scheduler.step(epoch_loss)                
 
-        print()
+		print()
 
-    time_elapsed = time.time() - since
-    print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
-    print(f'Best val Acc: {best_acc:4f}')
-    model.load_state_dict(best_model_wts)
-    return model, val_acc_history
+	time_elapsed = time.time() - since
+	print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+	print(f'Best val Acc: {best_acc:4f}')
+	model.load_state_dict(best_model_wts)
+	return model, val_acc_history
 
 
 def test_model(model, optimizer, criterion, dataloader, prefix):
@@ -133,19 +133,19 @@ def test_model(model, optimizer, criterion, dataloader, prefix):
 	running_corrects = 0	
 
 	for inputs, labels in dataloader:
-	    inputs = inputs.to(DEVICE)
-	    labels = labels.to(DEVICE)
-	    optimizer.zero_grad()
-	    with torch.set_grad_enabled(False):
-	        outputs = model(inputs)
-	        loss = criterion(outputs, labels)
-	        probs.extend(outputs.detach().cpu().tolist())
-	        all_labels.extend(labels.detach().cpu().tolist())
-	        _, preds = torch.max(outputs, 1)
-	        all_preds.extend(preds.detach().cpu().tolist())
+		inputs = inputs.to(DEVICE)
+		labels = labels.to(DEVICE)
+		optimizer.zero_grad()
+		with torch.set_grad_enabled(False):
+			outputs = model(inputs)
+			loss = criterion(outputs, labels)
+			probs.extend(outputs.detach().cpu().tolist())
+			all_labels.extend(labels.detach().cpu().tolist())
+			_, preds = torch.max(outputs, 1)
+			all_preds.extend(preds.detach().cpu().tolist())
 
-	    running_loss += loss.item() * inputs.size(0)
-	    running_corrects += torch.sum(preds == labels.data)
+		running_loss += loss.item() * inputs.size(0)
+		running_corrects += torch.sum(preds == labels.data)
 
 	epoch_loss = running_loss / len(dataloader.dataset)
 	epoch_acc = running_corrects.double() / len(dataloader.dataset)
@@ -157,53 +157,62 @@ def test_model(model, optimizer, criterion, dataloader, prefix):
 
 
 def set_parameter_requires_grad(model, feature_extracting):
-    if feature_extracting:
-        for param in model.parameters():
-            param.requires_grad = False
+	if feature_extracting:
+		for param in model.parameters():
+			param.requires_grad = False
 
 
 def initialize_model(model_name, num_classes, feature_extract=False, use_pretrained=True):
-    model_ft = None
-    input_size = 0
+	model_ft = None
+	input_size = 0
 
-    if model_name == "resnet":
-        model_ft = models.resnet18(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
-        input_size = 224
-
-
-    elif model_name == "vgg":
-        model_ft = models.vgg13_bn(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.classifier[6].in_features
-        model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
-        input_size = 224
+	if model_name == "resnet":
+		model_ft = models.resnet18(pretrained=use_pretrained)
+		set_parameter_requires_grad(model_ft, feature_extract)
+		num_ftrs = model_ft.fc.in_features
+		model_ft.fc = nn.Linear(num_ftrs, num_classes)
+		input_size = 224
 
 
-    elif model_name == "inception":
-        model_ft = models.inception_v3(pretrained=use_pretrained)
-        set_parameter_requires_grad(model_ft, feature_extract)
+	elif model_name in ['vgg11', 'vgg13', 'vgg16', 'vgg19']:
 
-        num_ftrs = model_ft.AuxLogits.fc.in_features
-        model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
+		if model_name == 'vgg11':
+			model_ft = models.vgg11_bn(pretrained=use_pretrained)
+		elif model_name == 'vgg13':
+			model_ft = models.vgg13_bn(pretrained=use_pretrained)
+		elif model_name == 'vgg16':
+			model_ft = models.vgg16_bn(pretrained=use_pretrained)
+		else:
+			model_ft = models.vgg19_bn(pretrained=use_pretrained)
 
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs,num_classes)
-        input_size = 299
+		set_parameter_requires_grad(model_ft, feature_extract)
+		num_ftrs = model_ft.classifier[6].in_features
+		model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
+		input_size = 224
 
-    else:
-        print("Invalid model name, exiting...")
-        exit()
 
-    return model_ft, input_size
+	elif model_name == "inception":
+		model_ft = models.inception_v3(pretrained=use_pretrained)
+		set_parameter_requires_grad(model_ft, feature_extract)
+
+		num_ftrs = model_ft.AuxLogits.fc.in_features
+		model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
+
+		num_ftrs = model_ft.fc.in_features
+		model_ft.fc = nn.Linear(num_ftrs,num_classes)
+		input_size = 299
+
+	else:
+		print("Invalid model name, exiting...")
+		exit()
+
+	return model_ft, input_size
 
 
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = 16 #os.cpu_count()
-MODEL_NAME = 'vgg'
+MODEL_NAME = 'vgg19'
 BATCH_SIZE = 32
 NUM_EPOCHS = 50
 IMAGE_SIZE = 224
@@ -216,18 +225,18 @@ SET_100_DIR = './out/cnn/test/set_100/'
 learning_rate = 0.001
 
 train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
-                                       transforms.RandomResizedCrop(IMAGE_SIZE),
-                                       transforms.RandomHorizontalFlip(),
-                                       transforms.RandomVerticalFlip(),
-                                       transforms.RandomRotation(25),
-                                       transforms.ToTensor(),
-                                       transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-                                      ])
+									   transforms.RandomResizedCrop(IMAGE_SIZE),
+									   transforms.RandomHorizontalFlip(),
+									   transforms.RandomVerticalFlip(),
+									   transforms.RandomRotation(25),
+									   transforms.ToTensor(),
+									   transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+									  ])
 
 val_test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
-                                     transforms.ToTensor(),
-                                     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-                                      ])
+										  transforms.ToTensor(),
+										  transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+										  ])
 
 
 
@@ -275,7 +284,7 @@ print(model_ft)
 print()
 
 model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criterion, optimizer_ft,
-                             device=DEVICE, num_epochs=NUM_EPOCHS, is_inception=(MODEL_NAME=="inception"), scheduler=scheduler)
+							 device=DEVICE, num_epochs=NUM_EPOCHS, is_inception=(MODEL_NAME=="inception"), scheduler=scheduler)
 
 
 model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
@@ -283,13 +292,14 @@ model_ft = model_ft.to(DEVICE)
 model_ft.load_state_dict(torch.load('./out/cnn/model.pth'))
 
 
-## VGG11 + BN
-model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6],
-                            nn.Softmax(dim=1))
-
-## InceptionV3
-# model_ft.fc = nn.Sequential(model_ft.fc,
-#                             nn.Softmax(dim=1))
+if MODEL_NAME in ['vgg11', 'vgg13', 'vgg16', 'vgg19']:
+	model_ft.classifier[6] = nn.Sequential(model_ft.classifier[6], nn.Softmax(dim=1))
+elif MODEL_NAME == 'inception':
+	model_ft.fc = nn.Sequential(model_ft.fc, nn.Softmax(dim=1))
+elif MODEL_NAME == 'resnet':
+	model_ft.fc = nn.Sequential(model_ft.fc, nn.Softmax(dim=1))
+else:
+	print('Did not append Softmax layer before testing!')
 
 
 test_model(model_ft, optimizer_ft, criterion, test_dataloader, 'test')
