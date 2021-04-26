@@ -11,8 +11,67 @@ library(caret)
 ```
 
 
+# Real-image classifier
+- Trained on real images from split 3
+- Evaluated on real images from split 4
+- Tested on real images from split 5
+
+```{r message=FALSE}
+probs <- read_csv('./out/cnn/vgg13_real/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg13_real/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg13_real/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+
+
+set_100_probs <- read_csv('./out/cnn/vgg13_real/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg13_real/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg13_real/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+```
 
 ```{r}
+confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+```{r}
+confusionMatrix(factor(set_100_probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(set_100_probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+
+
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Real Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title, colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Real Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+
+
+# Synthetic-image classifier
+- Trained on synthetic images generated from split 3
+- Evaluated on real images from split 4
+- Tested on real images from split 5
+
+```{r message=FALSE}
 probs <- read_csv('./out/cnn/vgg13/test_labels.csv', col_names = 'ground_truth') %>%
     bind_cols(read_csv('./out/cnn/vgg13/test_preds.csv', col_names = c('prediction')),
               read_csv('./out/cnn/vgg13/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
@@ -27,16 +86,21 @@ set_100_probs <- read_csv('./out/cnn/vgg13/set_100_labels.csv', col_names = 'gro
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
 
+
+```{r}
+confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+
 ```{r}
 confusionMatrix(factor(set_100_probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
                 factor(set_100_probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
 ```
 
 
-```{r}
-confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
-                factor(probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
-```
+
+
 
 
 
@@ -45,7 +109,7 @@ pred <- prediction(probs$p_no, probs$labels_no_rest)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
-title <- paste('ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+title <- paste('Synthetic Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
 plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
@@ -57,7 +121,7 @@ pred <- prediction(probs$p_plus, probs$labels_plus_rest)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
-title <- paste('ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+title <- paste('Synthetic Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
 plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
