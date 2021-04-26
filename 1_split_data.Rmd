@@ -106,6 +106,7 @@ gan_preplus2plus <- split_1 %>%
 
 cnn_train <- split_3 %>%
     gather('view', 'image_id', posterior:superior) %>%
+    filter(view == 'posterior') %>% #### COMMENT OUT  FOR ALL VIEWS
     drop_na(image_id) # %>%
     # group_by(ground_truth) %>%
     # add_count() %>%
@@ -159,7 +160,7 @@ write_csv(cnn_test, './out/cnn/test/cnn_test.csv')
 
 
 ```{r}
-src = '/Volumes/Storage/irop_data/segmentations'
+src = '/Volumes/External/irop_data/segmentations'
 
 dst = './out/gan/no2plus/images'
 file_copy(paste(src, gan_no2plus$image_id, sep = '/'), paste(dst, gan_no2plus$ground_truth, gan_no2plus$image_id, sep = '/'), overwrite = TRUE)
