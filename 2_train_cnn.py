@@ -215,17 +215,18 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_WORKERS = 16 #os.cpu_count()
-MODEL_NAME = 'resnet'
+MODEL_NAME = 'vgg13'
 BATCH_SIZE = 32
 NUM_EPOCHS = 50
 IMAGE_SIZE = 224
 IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
-TRAIN_DIR = './out/cnn/train/synthetic/'
+# TRAIN_DIR = './out/cnn/train/synthetic/'
+TRAIN_DIR = './out/cnn/train/real/'
 VAL_DIR = './out/cnn/val/real/'
 TEST_DIR = './out/cnn/test/real/'
 SET_100_DIR = './out/cnn/test/set_100/'
 
-learning_rate = 0.0001
+learning_rate = 0.001
 
 train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
 									   transforms.RandomResizedCrop(IMAGE_SIZE),
@@ -266,7 +267,14 @@ model_ft = model_ft.to(DEVICE)
 params_to_update = model_ft.parameters()
 optimizer_ft = optim.SGD(params_to_update, lr=learning_rate)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
-criterion = nn.CrossEntropyLoss()
+
+if 'real' in TRAIN_DIR:
+	weight = torch.tensor([927/927, 927/168, 927/40]).to(DEVICE)
+else:
+	weight = None
+
+print(f'Class weighting: {weight}')
+criterion = nn.CrossEntropyLoss(weight=weight)
 
 
 print()
