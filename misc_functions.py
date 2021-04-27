@@ -9,7 +9,7 @@ def create_copies(path, num_copies):
 	os.mkdir(store_dir)
 	for copy_num in range(num_copies):
 		for file in os.listdir(path):
-			new_name = f'{file.split(".")[0]}-{copy_num + 1}.png'
+			new_name = f'{file.split(".")[0]}-{copy_num + 1}.bmp'
 			shutil.copyfile(os.path.join(path, file), os.path.join(store_dir, new_name))
 
 
@@ -23,9 +23,9 @@ def clean_bmp(path):
 				img[img < 26] = 0
 				cv2.imwrite(os.path.join(root, png_name), img)
 				os.remove(os.path.join(root, name))
-					
 
-def clean_gan(path):
+
+def clean_png(path):
 	for root, dirs, files in os.walk(path):
 		print(f'Current location: {root}')
 		for index, name in enumerate(files):
@@ -35,12 +35,10 @@ def clean_gan(path):
 				cv2.imwrite(os.path.join(root, name), img)
 
 
+# create_copies('./out/cnn/train/real/2/', 6)
 
+# create_copies('./out/cnn/train/real/3/', 24)
 
-path = './out/cnn/train/synthetic'
+# clean_bmp('./out/')
 
-# create_copies(path, 23)
-
-# clean_bmp(path)
-
-clean_gan(path)
+# clean_png('./out/cnn/train/synthetic/')
