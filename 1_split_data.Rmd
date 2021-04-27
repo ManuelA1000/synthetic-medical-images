@@ -5,7 +5,7 @@ output: html_notebook
 
 
 
-```{r}
+```{r message=FALSE}
 library(tidyverse)
 library(janitor)
 library(readxl)
@@ -14,14 +14,12 @@ library(fs)
 ```
 
 
-
 ```{r}
 set.seed(1337)
 ```
 
 
-
-```{r}
+```{r message=FALSE}
 all_irop <- read_csv('/Volumes/External/irop_data/irop_07092020.csv') %>%
     clean_names() %>%
     filter(reader == 'goldenstandardreading@ohsu.edu') %>%
@@ -71,47 +69,39 @@ split_5 <- read_excel('/Volumes/External/irop_data/all_splits_master_file.xlsx',
 
 
 ```{r}
-gan_no2plus <- split_1 %>%
+images_all <- split_1 %>%
     bind_rows(split_2) %>%
-    filter(ground_truth != 'Pre-Plus') %>%
     gather('view', 'image_id', posterior:superior) %>%
     drop_na() %>%
-    filter(ground_truth == 'Plus' | view == 'posterior')
-    # %>%
-    # group_by(ground_truth) %>%
-    # add_count() %>%
-    # slice(sample(row_number(), min(.$n))) %>%
-    # select(-n)
+    filter(image_id != '49318.bmp') ## eye speculum image
 
-gan_no2preplus <- split_1 %>%
-    bind_rows(split_2) %>%
-    filter(ground_truth != 'Plus') %>%
-    gather('view', 'image_id', posterior:superior) %>%
-    drop_na() %>%
-    filter(ground_truth == 'Pre-Plus' | view == 'posterior') # %>%
-    # group_by(ground_truth) %>%
-    # add_count() %>%
-    # slice(sample(row_number(), min(.$n))) %>%
-    # select(-n)
+images_no <- images_all %>%
+    filter(ground_truth == 'No') %>%
+    sample_n(1221)
 
-gan_preplus2plus <- split_1 %>%
-    bind_rows(split_2) %>%
-    filter(ground_truth != 'No') %>%
-    gather('view', 'image_id', posterior:superior) %>%
-    drop_na() #%>%
-    # group_by(ground_truth) %>%
-    # add_count() %>%
-    # slice(sample(row_number(), min(.$n))) %>%
-    # select(-n)
+images_preplus <- images_all %>%
+    filter(ground_truth == 'Pre-Plus')
 
+images_plus <- images_all %>%
+    filter(ground_truth == 'Plus')
+```
+
+
+```{r}
+gan_no2plus <- images_no %>%
+    bind_rows(images_plus)
+
+gan_no2preplus <- images_no %>%
+    bind_rows(images_preplus)
+
+gan_preplus2plus <- images_preplus %>%
+    bind_rows(images_plus)
+```
+
+
+```{r}
 cnn_train <- split_3 %>%
-    gather('view', 'image_id', posterior:superior) %>%
-    filter(view == 'posterior') %>% #### COMMENT OUT  FOR ALL VIEWS
-    drop_na(image_id) # %>%
-    # group_by(ground_truth) %>%
-    # add_count() %>%
-    # slice(sample(row_number(), min(.$n))) %>%
-    # select(-n)
+    drop_na(posterior)
 
 cnn_val <- split_4 %>%
     drop_na(posterior) %>%
@@ -163,24 +153,35 @@ write_csv(cnn_test, './out/cnn/test/cnn_test.csv')
 src = '/Volumes/External/irop_data/segmentations'
 
 dst = './out/gan/no2plus/images'
-file_copy(paste(src, gan_no2plus$image_id, sep = '/'), paste(dst, gan_no2plus$ground_truth, gan_no2plus$image_id, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, gan_no2plus$image_id, sep = '/'),
+          paste(dst, gan_no2plus$ground_truth, gan_no2plus$image_id, sep = '/'),
+          overwrite = TRUE)
 
 dst = './out/gan/no2preplus/images'
-file_copy(paste(src, gan_no2preplus$image_id, sep = '/'), paste(dst, gan_no2preplus$ground_truth, gan_no2preplus$image_id, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, gan_no2preplus$image_id, sep = '/'),
+          paste(dst, gan_no2preplus$ground_truth, gan_no2preplus$image_id, sep = '/'),
+          overwrite = TRUE)
 
 dst = './out/gan/preplus2plus/images'
-file_copy(paste(src, gan_preplus2plus$image_id, sep = '/'), paste(dst, gan_preplus2plus$ground_truth, gan_preplus2plus$image_id, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, gan_preplus2plus$image_id, sep = '/'),
+          paste(dst, gan_preplus2plus$ground_truth, gan_preplus2plus$image_id, sep = '/'),
+          overwrite = TRUE)
 
 dst = './out/cnn/train/real'
-file_copy(paste(src, cnn_train$image_id, sep = '/'), paste(dst, cnn_train$ground_truth, cnn_train$image_id, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, cnn_train$posterior, sep = '/'),
+          paste(dst, cnn_train$ground_truth, cnn_train$posterior, sep = '/'),
+          overwrite = TRUE)
 
 dst = './out/cnn/val/real'
-file_copy(paste(src, cnn_val$posterior, sep = '/'), paste(dst, cnn_val$ground_truth, cnn_val$posterior, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, cnn_val$posterior, sep = '/'),
+          paste(dst, cnn_val$ground_truth, cnn_val$posterior, sep = '/'),
+          overwrite = TRUE)
 
 dst = './out/cnn/test/real'
-file_copy(paste(src, cnn_test$posterior, sep = '/'), paste(dst, cnn_test$ground_truth, cnn_test$posterior, sep = '/'), overwrite = TRUE)
+file_copy(paste(src, cnn_test$posterior, sep = '/'),
+          paste(dst, cnn_test$ground_truth, cnn_test$posterior, sep = '/'),
+          overwrite = TRUE)
 ```
-
 
 
 ```{r}
@@ -192,7 +193,6 @@ file_move('./out/gan/no2preplus/images/Pre-Plus', './out/gan/no2preplus/images/t
 
 file_move('./out/gan/preplus2plus/images/Pre-Plus', './out/gan/preplus2plus/images/trainA')
 file_move('./out/gan/preplus2plus/images/Plus', './out/gan/preplus2plus/images/trainB')
-
 
 file_move('./out/cnn/train/real/No', './out/cnn/train/real/1')
 file_move('./out/cnn/train/real/Pre-Plus', './out/cnn/train/real/2')
@@ -208,4 +208,4 @@ file_move('./out/cnn/test/real/Plus', './out/cnn/test/real/3')
 ```
 
 
-## IMPORTANT: Run 2_clean_images.py before training models!
+## IMPORTANT: Clean images before training models!
