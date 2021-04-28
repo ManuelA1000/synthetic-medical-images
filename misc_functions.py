@@ -42,3 +42,5 @@ def clean_png(path):
 # clean_bmp('./out/')
 
 # clean_png('./out/cnn/train/synthetic/')
+
+# clean_png('./out/cnn/test/set_100/')
