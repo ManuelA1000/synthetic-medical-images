@@ -212,23 +212,23 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 	return model_ft, input_size
 
 
-
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-NUM_WORKERS = 16 #os.cpu_count()
-MODEL_NAME = 'vgg13'
 BATCH_SIZE = 32
-NUM_EPOCHS = 50
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 IMAGE_SIZE = 224
-IMAGE_RESIZE = int(IMAGE_SIZE * 1.143)
-# TRAIN_DIR = './out/cnn/train/synthetic/'
-TRAIN_DIR = './out/cnn/train/real/'
-VAL_DIR = './out/cnn/val/real/'
-TEST_DIR = './out/cnn/test/real/'
+LEARNING_RATE = 0.001
+MODEL_NAME = 'vgg13'
+NUM_EPOCHS = 50
+NUM_WORKERS = 16 #os.cpu_count()
 SET_100_DIR = './out/cnn/test/set_100/'
+TEST_DIR = './out/cnn/test/real/'
+TRAIN_DIR = './out/cnn/train/synthetic/'
+# TRAIN_DIR = './out/cnn/train/real/'
+VAL_DIR = './out/cnn/val/real/'
 
-learning_rate = 0.001
 
-train_transforms = transforms.Compose([transforms.Resize(IMAGE_RESIZE),
+image_resize = int(IMAGE_SIZE * 1.143)
+
+train_transforms = transforms.Compose([transforms.Resize(image_resize),
 									   transforms.RandomResizedCrop(IMAGE_SIZE),
 									   transforms.RandomHorizontalFlip(),
 									   transforms.RandomVerticalFlip(),
@@ -265,7 +265,7 @@ model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=
 model_ft = model_ft.to(DEVICE)
 
 params_to_update = model_ft.parameters()
-optimizer_ft = optim.SGD(params_to_update, lr=learning_rate)
+optimizer_ft = optim.SGD(params_to_update, lr=LEARNING_RATE)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
 
 if 'real' in TRAIN_DIR:
@@ -285,7 +285,7 @@ print()
 print(f'Device: {DEVICE}')
 print()
 print(f'Model: {MODEL_NAME}')
-print(f'Initial Learning Rate: {learning_rate}')
+print(f'Initial Learning Rate: {LEARNING_RATE}')
 print(f'Num Workers: {NUM_WORKERS}')
 print(f'Num Epochs: {NUM_EPOCHS}')
 print(f'Batch Size: {BATCH_SIZE}')
