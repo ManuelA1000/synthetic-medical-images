@@ -214,15 +214,15 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 BATCH_SIZE = 32
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-IMAGE_SIZE = 224
+IMAGE_SIZE = 299
 LEARNING_RATE = 0.001
-MODEL_NAME = 'vgg13'
+MODEL_NAME = 'inception'
 NUM_EPOCHS = 50
 NUM_WORKERS = 16 #os.cpu_count()
 SET_100_DIR = './out/cnn/test/set_100/'
 TEST_DIR = './out/cnn/test/real/'
 TRAIN_DIR = './out/cnn/train/synthetic/'
-# TRAIN_DIR = './out/cnn/train/real/'
+TRAIN_DIR = './out/cnn/train/real/'
 VAL_DIR = './out/cnn/val/real/'
 
 
@@ -266,16 +266,12 @@ model_ft = model_ft.to(DEVICE)
 
 params_to_update = model_ft.parameters()
 optimizer_ft = optim.SGD(params_to_update, lr=LEARNING_RATE)
-scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
+scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.1, verbose=True)
 
-if 'real' in TRAIN_DIR:
-	weight = torch.tensor([927/927, 927/168, 927/40]).to(DEVICE)
-else:
-	weight = None
-
-print(f'Class weighting: {weight}')
+counts = torch.unique(torch.tensor(train_dataset.targets), return_counts=True)[1].tolist()
+majority_class = max(counts)
+weight = torch.tensor([majority_class/counts[0], majority_class/counts[1], majority_class/counts[2]]).to(DEVICE)
 criterion = nn.CrossEntropyLoss(weight=weight)
-
 
 print()
 print(f'Train Directory: {TRAIN_DIR}')
@@ -290,8 +286,7 @@ print(f'Num Workers: {NUM_WORKERS}')
 print(f'Num Epochs: {NUM_EPOCHS}')
 print(f'Batch Size: {BATCH_SIZE}')
 print(f'Image Size: {IMAGE_SIZE}')
-print()
-print(model_ft)
+print(f'Class weighting: {weight}')
 print()
 
 model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criterion, optimizer_ft,
