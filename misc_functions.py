@@ -35,11 +35,11 @@ def clean_png(path):
 				cv2.imwrite(os.path.join(root, name), img)
 
 
+# clean_bmp('./out/')
+
 # create_copies('./out/cnn/train/real/2/', 6)
 
 # create_copies('./out/cnn/train/real/3/', 24)
-
-# clean_bmp('./out/')
 
 # clean_png('./out/cnn/train/synthetic/')
 
