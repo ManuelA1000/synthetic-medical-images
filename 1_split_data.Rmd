@@ -76,8 +76,7 @@ images_all <- split_1 %>%
     filter(image_id != '49318.bmp') ## eye speculum image
 
 images_no <- images_all %>%
-    filter(ground_truth == 'No') %>%
-    sample_n(1221)
+    filter(ground_truth == 'No')
 
 images_preplus <- images_all %>%
     filter(ground_truth == 'Pre-Plus')
