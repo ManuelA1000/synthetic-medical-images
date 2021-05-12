@@ -9,7 +9,7 @@ def create_copies(path, num_copies):
 	os.mkdir(store_dir)
 	for copy_num in range(num_copies):
 		for file in os.listdir(path):
-			new_name = f'{file.split(".")[0]}-{copy_num + 1}.bmp'
+			new_name = f'{file.split(".")[0]}-{copy_num + 1}.{file.split(".")[1]}'
 			shutil.copyfile(os.path.join(path, file), os.path.join(store_dir, new_name))
 
 
