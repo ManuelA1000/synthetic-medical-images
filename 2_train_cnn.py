@@ -46,6 +46,8 @@ def visualize_model(model, dataloaders, num_images=6):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, device, num_epochs=25, is_inception=False, scheduler=None):
 	since = time.time()
 
+	last_update = 0
+
 	val_acc_history = []
 
 	best_model_wts = copy.deepcopy(model.state_dict())
@@ -96,6 +98,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
 			print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
 			if phase == 'val' and epoch_acc > best_acc:
+				last_update = 0
 			# if phase == 'val' and epoch_loss < best_loss:
 				best_acc = epoch_acc
 				best_loss = epoch_loss
@@ -104,6 +107,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
 				print('===MODEL SAVED===')
 				
 			elif phase == 'val' and epoch_acc == best_acc and epoch_loss < best_loss:
+				last_update = 0
 			# elif phase == 'val' and epoch_loss == best_loss and epoch_acc > best_acc:
 				best_acc = epoch_acc
 				best_loss = epoch_loss
@@ -115,6 +119,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, d
 				val_acc_history.append(epoch_acc)
 				scheduler.step(epoch_loss)                
 
+		last_update += 1
+		if last_update == 20:
+			break
 		print()
 
 	time_elapsed = time.time() - since
@@ -167,13 +174,13 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 	input_size = 0
 
 	if model_name == "resnet":
-		model_ft = models.resnet50(pretrained=use_pretrained)
+		model_ft = models.resnet152(pretrained=use_pretrained)
 		set_parameter_requires_grad(model_ft, feature_extract)
 		num_ftrs = model_ft.fc.in_features
-		model_ft.fc = nn.Sequential(nn.Linear(num_ftrs, 1024),
+		model_ft.fc = nn.Sequential(nn.Linear(num_ftrs, num_ftrs // 2),
 									nn.ReLU(inplace=True),
-									nn.Dropout(),
-									nn.Linear(1024, num_classes))
+									nn.Dropout(0.6),
+									nn.Linear(num_ftrs // 2, num_classes))
 		input_size = 224
 
 
@@ -214,16 +221,17 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 
 BATCH_SIZE = 32
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-IMAGE_SIZE = 299
-LEARNING_RATE = 0.001
-MODEL_NAME = 'inception'
-NUM_EPOCHS = 50
+IMAGE_SIZE = 224
+LEARNING_RATE = 0.01
+MODEL_NAME = 'vgg11'
+NUM_EPOCHS = 100
 NUM_WORKERS = 16 #os.cpu_count()
-SET_100_DIR = './out/cnn/test/set_100/'
-TEST_DIR = './out/cnn/test/real/'
-TRAIN_DIR = './out/cnn/train/synthetic/'
-TRAIN_DIR = './out/cnn/train/real/'
-VAL_DIR = './out/cnn/val/real/'
+SET_100_DIR = './out/cnn/posterior_view/set_100/'
+TEST_DIR = './out/cnn/posterior_view/test/'
+TRAIN_DIR = './out/cnn/posterior_view/synthetic/'
+# TRAIN_DIR = './out/split_3/train/synthetic_balanced/'
+# TRAIN_DIR = './out/cnn/train/real/'
+VAL_DIR = './out/cnn/posterior_view/val/'
 
 
 image_resize = int(IMAGE_SIZE * 1.143)
@@ -232,14 +240,16 @@ train_transforms = transforms.Compose([transforms.Resize(image_resize),
 									   transforms.RandomResizedCrop(IMAGE_SIZE),
 									   transforms.RandomHorizontalFlip(),
 									   transforms.RandomVerticalFlip(),
-									   transforms.RandomRotation(25),
+									   transforms.RandomRotation(45),
 									   transforms.ToTensor(),
-									   transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+									   # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+									   transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 									  ])
 
 val_test_transforms = transforms.Compose([transforms.Resize(IMAGE_SIZE),
 										  transforms.ToTensor(),
-										  transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+										  # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+										  transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 										  ])
 
 
@@ -266,7 +276,7 @@ model_ft = model_ft.to(DEVICE)
 
 params_to_update = model_ft.parameters()
 optimizer_ft = optim.SGD(params_to_update, lr=LEARNING_RATE)
-scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.1, verbose=True)
+scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.5, verbose=True)
 
 counts = torch.unique(torch.tensor(train_dataset.targets), return_counts=True)[1].tolist()
 majority_class = max(counts)
@@ -293,7 +303,7 @@ model_ft, hist = train_model(model_ft, train_dataloader, val_dataloader, criteri
 							 device=DEVICE, num_epochs=NUM_EPOCHS, is_inception=(MODEL_NAME=="inception"), scheduler=scheduler)
 
 
-model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=True)
+model_ft, input_size = initialize_model(MODEL_NAME, num_classes, use_pretrained=False)
 model_ft = model_ft.to(DEVICE)
 model_ft.load_state_dict(torch.load('./out/cnn/model.pth'))
 

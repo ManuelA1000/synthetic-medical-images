@@ -76,13 +76,14 @@ images_all <- split_1 %>%
     filter(image_id != '49318.bmp') ## eye speculum image
 
 images_no <- images_all %>%
-    filter(ground_truth == 'No')
+    filter(ground_truth == 'No' & view == 'posterior') # %>%
+    # sample_n(1226)
 
 images_preplus <- images_all %>%
-    filter(ground_truth == 'Pre-Plus')
+    filter(ground_truth == 'Pre-Plus' & view == 'posterior')
 
 images_plus <- images_all %>%
-    filter(ground_truth == 'Plus')
+    filter(ground_truth == 'Plus' & view == 'posterior')
 ```
 
 
@@ -100,6 +101,7 @@ gan_preplus2plus <- images_preplus %>%
 
 ```{r}
 cnn_train <- split_3 %>%
+    bind_rows(split_1, split_2) %>% ## comment out to only train on split 3
     drop_na(posterior)
 
 cnn_val <- split_4 %>%

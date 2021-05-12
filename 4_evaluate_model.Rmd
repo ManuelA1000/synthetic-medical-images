@@ -11,22 +11,22 @@ library(caret)
 ```
 
 
-# Real-image classifier
+# Real-image classifier - Set 3 (weighted loss)
 - Trained on real images from split 3
 - Evaluated on real images from split 4
 - Tested on real images from split 5
 
 ```{r message=FALSE}
-probs <- read_csv('./out/cnn/vgg13_real/test_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg13_real/test_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg13_real/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+probs <- read_csv('./out/cnn/vgg11_real_set_3/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_real_set_3/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_real_set_3/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 
 
-set_100_probs <- read_csv('./out/cnn/vgg13_real/set_100_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg13_real/set_100_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg13_real/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+set_100_probs <- read_csv('./out/cnn/vgg11_real_set_3/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_real_set_3/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_real_set_3/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
@@ -65,23 +65,221 @@ abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
 
 
+```{r}
+num_total <- nrow(probs)
+num_normal <- nrow(filter(probs, ground_truth == 0))
+num_plus <- nrow(filter(probs, ground_truth == 2))
+```
 
-# Synthetic-image classifier
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, ylim=c(0,1))
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
+abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+
+
+
+
+
+# Real-image classifier - Sets 1-3 (weighted loss)
+- Trained on real images from splits 1,2 & 3
+- Evaluated on real images from split 4
+- Tested on real images from split 5
+
+```{r message=FALSE}
+probs <- read_csv('./out/cnn/vgg11_real_set_123/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_real_set_123/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_real_set_123/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+
+
+set_100_probs <- read_csv('./out/cnn/vgg11_real_set_123/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_real_set_123/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_real_set_123/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+```
+
+```{r}
+confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+```{r}
+confusionMatrix(factor(set_100_probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(set_100_probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+
+
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Real Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title, colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Real Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+
+```{r}
+num_total <- nrow(probs)
+num_normal <- nrow(filter(probs, ground_truth == 0))
+num_plus <- nrow(filter(probs, ground_truth == 2))
+```
+
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, ylim=c(0,1))
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
+abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+
+
+
+
+
+# Synthetic-image classifier (weighted loss)
 - Trained on synthetic images generated from split 3
 - Evaluated on real images from split 4
 - Tested on real images from split 5
 
 ```{r message=FALSE}
-probs <- read_csv('./out/cnn/vgg13/test_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg13/test_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg13/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+probs <- read_csv('./out/cnn/vgg11_synthetic/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 
 
-set_100_probs <- read_csv('./out/cnn/vgg13/set_100_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg13/set_100_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg13/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+set_100_probs <- read_csv('./out/cnn/vgg11_synthetic/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+```
+
+
+
+```{r}
+confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+
+```{r}
+confusionMatrix(factor(set_100_probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+                factor(set_100_probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
+```
+
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Synthetic Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+title <- paste('Synthetic Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T)
+abline(a= 0, b=1, col = 'red', lty = 'dashed')
+```
+
+```{r}
+num_total <- nrow(probs)
+num_normal <- nrow(filter(probs, ground_truth == 0))
+num_plus <- nrow(filter(probs, ground_truth == 2))
+```
+
+```{r}
+pred <- prediction(probs$p_no, probs$labels_no_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, ylim=c(0,1))
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+```{r}
+pred <- prediction(probs$p_plus, probs$labels_plus_rest)
+perf <- performance(pred, measure = "prec", x.measure = "rec")
+auc <- performance(pred, measure = "aucpr")
+auc <- auc@y.values[[1]]
+title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
+abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+```
+
+
+
+
+
+# Synthetic-image classifier (Balanced dataset)
+- Trained on synthetic images generated from split 3
+- Evaluated on real images from split 4
+- Tested on real images from split 5
+
+```{r message=FALSE}
+probs <- read_csv('./out/cnn/vgg11_synthetic_balanced/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_balanced/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_balanced/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+    mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
+           labels_plus_rest = if_else(ground_truth == 2, 1, 0))
+
+
+set_100_probs <- read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
@@ -98,12 +296,6 @@ confusionMatrix(factor(set_100_probs$prediction, labels = c('Normal', 'Pre-Plus'
                 factor(set_100_probs$ground_truth, labels = c('Normal', 'Pre-Plus', 'Plus')))
 ```
 
-
-
-
-
-
-
 ```{r}
 pred <- prediction(probs$p_no, probs$labels_no_rest)
 perf <- performance(pred, measure = "tpr", x.measure = "fpr")
@@ -113,8 +305,6 @@ title <- paste('Synthetic Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(
 plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
-
-
 
 ```{r}
 pred <- prediction(probs$p_plus, probs$labels_plus_rest)
@@ -126,14 +316,11 @@ plot(perf, main = title , colorize = T)
 abline(a= 0, b=1, col = 'red', lty = 'dashed')
 ```
 
-
 ```{r}
 num_total <- nrow(probs)
 num_normal <- nrow(filter(probs, ground_truth == 0))
 num_plus <- nrow(filter(probs, ground_truth == 2))
 ```
-
-
 
 ```{r}
 pred <- prediction(probs$p_no, probs$labels_no_rest)
@@ -144,8 +331,6 @@ title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = 
 plot(perf, main = title , colorize = T, ylim=c(0,1))
 abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
 ```
-
-
 
 ```{r}
 pred <- prediction(probs$p_plus, probs$labels_plus_rest)
