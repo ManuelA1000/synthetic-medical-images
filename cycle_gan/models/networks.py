@@ -412,7 +412,7 @@ class ResnetBlock(nn.Module):
 
         conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim), nn.ReLU(True)]
         if use_dropout:
-            conv_block += [nn.Dropout(0.75)]
+            conv_block += [nn.Dropout(0.5)]
 
         p = 0
         if padding_type == 'reflect':
@@ -522,7 +522,7 @@ class UnetSkipConnectionBlock(nn.Module):
             up = [uprelu, upconv, upnorm]
 
             if use_dropout:
-                model = down + [submodule] + up + [nn.Dropout(0.75)]
+                model = down + [submodule] + up + [nn.Dropout(0.5)]
             else:
                 model = down + [submodule] + up
 

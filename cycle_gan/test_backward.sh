@@ -1,8 +1,8 @@
-python test.py --model cycle_gan --name normal2plus --dataroot ../out/cnn/train/to_convert/3
+python test.py --model cycle_gan --name normal2plus --dataroot ../out/cnn/convert/3
 
-python test.py --model cycle_gan --name normal2preplus --dataroot ../out/cnn/train/to_convert/2
+python test.py --model cycle_gan --name normal2preplus --dataroot ../out/cnn/convert/2
 
-python test.py --model cycle_gan --name preplus2plus --dataroot ../out/cnn/train/to_convert/3
+python test.py --model cycle_gan --name preplus2plus --dataroot ../out/cnn/convert/3
 
 
 cd results/normal2plus/test_latest/images/
