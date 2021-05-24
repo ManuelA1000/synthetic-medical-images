@@ -1,0 +1,15 @@
+{
+  "pathDB": "./data/normal",
+  "config": {
+    "maxIterAtScale": [
+      40000,
+      40000,
+      40000,
+      40000,
+      40000,
+      40000,
+      40000
+    ]
+  },
+  "imagefolderDataset": true
+}

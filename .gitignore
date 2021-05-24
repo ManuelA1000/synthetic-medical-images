@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 out/
+pytorch_GAN_zoo/out/
+pytorch_GAN_zoo/output_networks/
 cycle_gan/checkpoints/
 cycle_gan/results/
 .ipynb_checkpoints/

@@ -181,22 +181,22 @@ abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
 
 
 
-# Synthetic-image classifier (weighted loss)
+# CycleGAN Synthetic-image classifier (weighted loss)
 - Trained on synthetic images generated from split 3
 - Evaluated on real images from split 4
 - Tested on real images from split 5
 
 ```{r message=FALSE}
-probs <- read_csv('./out/cnn/vgg11_synthetic/test_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg11_synthetic/test_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg11_synthetic/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+probs <- read_csv('./out/cnn/vgg11_synthetic_cycleGAN/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_cycleGAN/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_cycleGAN/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 
 
-set_100_probs <- read_csv('./out/cnn/vgg11_synthetic/set_100_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg11_synthetic/set_100_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg11_synthetic/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+set_100_probs <- read_csv('./out/cnn/vgg11_synthetic_cycleGAN/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_cycleGAN/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_cycleGAN/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
@@ -264,22 +264,22 @@ abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
 
 
 
-# Synthetic-image classifier (Balanced dataset)
+# PGAN Synthetic-image classifier (Balanced dataset)
 - Trained on synthetic images generated from split 3
 - Evaluated on real images from split 4
 - Tested on real images from split 5
 
 ```{r message=FALSE}
-probs <- read_csv('./out/cnn/vgg11_synthetic_balanced/test_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg11_synthetic_balanced/test_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg11_synthetic_balanced/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+probs <- read_csv('./out/cnn/vgg11_synthetic_PGAN/test_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_PGAN/test_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_PGAN/test_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 
 
-set_100_probs <- read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_labels.csv', col_names = 'ground_truth') %>%
-    bind_cols(read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_preds.csv', col_names = c('prediction')),
-              read_csv('./out/cnn/vgg11_synthetic_balanced/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
+set_100_probs <- read_csv('./out/cnn/vgg11_synthetic_PGAN/set_100_labels.csv', col_names = 'ground_truth') %>%
+    bind_cols(read_csv('./out/cnn/vgg11_synthetic_PGAN/set_100_preds.csv', col_names = c('prediction')),
+              read_csv('./out/cnn/vgg11_synthetic_PGAN/set_100_probs.csv', col_names = c('p_no', 'p_preplus', 'p_plus'))) %>%
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```

@@ -219,19 +219,19 @@ def initialize_model(model_name, num_classes, feature_extract=False, use_pretrai
 	return model_ft, input_size
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 IMAGE_SIZE = 224
 LEARNING_RATE = 0.01
 MODEL_NAME = 'vgg11'
-NUM_EPOCHS = 100
+NUM_EPOCHS = 25
 NUM_WORKERS = 16 #os.cpu_count()
-SET_100_DIR = './out/cnn/posterior_view/set_100/'
-TEST_DIR = './out/cnn/posterior_view/test/'
-TRAIN_DIR = './out/cnn/posterior_view/synthetic/'
+SET_100_DIR = './out/set_100/'
+TEST_DIR = './out/test/'
+TRAIN_DIR = './out/train/synthetic_PGAN/'
 # TRAIN_DIR = './out/split_3/train/synthetic_balanced/'
 # TRAIN_DIR = './out/cnn/train/real/'
-VAL_DIR = './out/cnn/posterior_view/val/'
+VAL_DIR = './out/val/'
 
 
 image_resize = int(IMAGE_SIZE * 1.143)
