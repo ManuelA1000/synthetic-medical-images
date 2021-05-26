@@ -49,8 +49,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Real Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title, colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -60,8 +60,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Real Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -77,8 +77,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, ylim=c(0,1))
-abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -87,8 +87,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
-abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -134,8 +134,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Real Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title, colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -145,8 +145,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Real Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -162,8 +162,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, ylim=c(0,1))
-abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -172,8 +172,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
-abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -220,8 +220,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Synthetic Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -230,8 +230,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Synthetic Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -246,8 +246,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, ylim=c(0,1))
-abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -256,8 +256,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
-abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 
@@ -302,8 +302,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Synthetic Images - ROC: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -312,8 +312,8 @@ perf <- performance(pred, measure = "tpr", x.measure = "fpr")
 auc <- performance(pred, measure = "auc")
 auc <- auc@y.values[[1]]
 title <- paste('Synthetic Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T)
-abline(a= 0, b=1, col = 'red', lty = 'dashed')
+plot(perf, main = title, lwd=2)
+abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -328,8 +328,8 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Normal vs Pre-plus/Plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, ylim=c(0,1))
-abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
 
 ```{r}
@@ -338,6 +338,6 @@ perf <- performance(pred, measure = "prec", x.measure = "rec")
 auc <- performance(pred, measure = "aucpr")
 auc <- auc@y.values[[1]]
 title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
-plot(perf, main = title , colorize = T, xlim=c(0,1), ylim=c(0,1))
-abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed')
+plot(perf, main = title , ylim=c(0,1), lwd=2)
+abline(a = num_normal/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
 ```
