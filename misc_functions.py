@@ -35,6 +35,16 @@ def clean_png(path):
 				cv2.imwrite(os.path.join(root, name), img)
 
 
+def resize(path):
+	for root, dirs, files in os.walk(path):
+		print(f'Current location: {root}')
+		for index, name in enumerate(files):
+			if name.endswith(('.png')):
+				img = cv2.imread(os.path.join(root, name))
+				img = cv2.resize(img, (256,256))
+				cv2.imwrite(os.path.join(root, name), img)
+
+
 # clean_bmp('./out/')
 
 # create_copies('./out/cnn/train/real/2/', 6)
@@ -44,3 +54,5 @@ def clean_png(path):
 # clean_png('./out/cnn/train/synthetic/')
 
 # clean_png('./out/cnn/test/set_100/')
+
+resize('cyclegan_images')

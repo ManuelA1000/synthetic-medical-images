@@ -8,6 +8,7 @@ output: html_notebook
 library(tidyverse)
 library(ROCR)
 library(caret)
+library(umap)
 ```
 
 
@@ -30,6 +31,8 @@ set_100_probs <- read_csv('./out/cnn/vgg11_real_set_3/set_100_labels.csv', col_n
     mutate(labels_no_rest = if_else(ground_truth == 0, 1, 0),
            labels_plus_rest = if_else(ground_truth == 2, 1, 0))
 ```
+
+
 
 ```{r}
 confusionMatrix(factor(probs$prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
