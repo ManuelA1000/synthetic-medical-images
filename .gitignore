@@ -1,14 +1,14 @@
-.Rproj.user
+## OS-related files
+.DS_Store
+
+## Folders
+out/
+fid_images/
+
+## R-related files
 .Rhistory
 .RData
 .Ruserdata
-out/
-fid_images/
-pytorch_GAN_zoo/data/
-pytorch_GAN_zoo/out/
-pytorch_GAN_zoo/output_networks/
-cycle_gan/checkpoints/
-cycle_gan/results/
-.ipynb_checkpoints/
+
+## Python-related files
 *.pyc
-.DS_Store

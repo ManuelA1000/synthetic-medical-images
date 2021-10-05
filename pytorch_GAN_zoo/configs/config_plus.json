@@ -1,5 +1,5 @@
 {
-  "pathDB": "./data/plus",
+  "pathDB": "./out/train/real/3",
   "config": {
     "maxIterAtScale": [
       40000,
@@ -10,6 +10,5 @@
       40000,
       40000
     ]
-  },
-  "imagefolderDataset": true
+  }
 }
