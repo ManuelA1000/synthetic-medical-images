@@ -146,7 +146,7 @@ class GANVisualizer():
             img = self.model.test(noiseData, getAvG=True, toCPU=True)
 
             for i in range(currBatch):
-                imgPath = os.path.join(path, "gen_" + str(index) + ".jpg")
+                imgPath = os.path.join(path, "gen_" + str(index) + ".png")
                 self.visualizer.saveTensor(img[i].view(1, 3, size[0], size[1]),
                                            size, imgPath)
                 index += 1
