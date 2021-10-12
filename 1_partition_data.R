@@ -20,7 +20,7 @@ read_split <- function(file, sheet, join_with) {
 
 
 
-data_irop <- read_csv('/Volumes/External/irop_data/irop_07092020.csv') %>%
+data_irop <- read_csv('/Volumes/External/datasets/i-ROP/irop_07092020.csv') %>%
     clean_names() %>%
     filter(reader == 'goldenstandardreading@ohsu.edu',
            !str_detect(subject_id, 'APEC')) %>%
@@ -28,7 +28,7 @@ data_irop <- read_csv('/Volumes/External/irop_data/irop_07092020.csv') %>%
            posterior = paste(file_path_sans_ext(basename(posterior)), '.bmp', sep = '')) %>%
     select(subject_id, eye, session, posterior)
 
-split_file = '/Volumes/External/irop_data/all_splits_master_file.xlsx'
+split_file = '/Volumes/External/datasets/i-ROP/all_splits_master_file.xlsx'
 split_1 <- read_split(split_file, sheet = 1, join_with = data_irop)
 split_2 <- read_split(split_file, sheet = 2, join_with = data_irop)
 split_3 <- read_split(split_file, sheet = 3, join_with = data_irop)
@@ -71,7 +71,7 @@ write_csv(data_val, './out/val/cnn_val.csv')
 write_csv(data_test, './out/test/cnn_test.csv')
 
 
-src = '/Volumes/External/irop_data/segmentations'
+src = '/Volumes/External/datasets/i-ROP/segmentations'
 
 dst = './out/train/real'
 file_copy(paste(src, data_train$posterior, sep = '/'),
