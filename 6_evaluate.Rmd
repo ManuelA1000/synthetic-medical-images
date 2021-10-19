@@ -1,0 +1,217 @@
+---
+title: "CNN Evaluation"
+output: html_notebook
+---
+
+
+## Load libraries and data
+```{r}
+library(tidyverse)
+library(ROCR)
+library(pROC)
+library(caret)
+library(boot)
+library(umap)
+library(ggthemes)
+
+set.seed(1337)
+```
+
+
+
+```{r}
+read_predictions <- function(dataset) {
+    read_csv(dataset) %>%
+        mutate(label = factor(label, labels = c('Normal', 'Pre-Plus', 'Plus')),
+               prediction = factor(prediction, labels = c('Normal', 'Pre-Plus', 'Plus')),
+               is_plus = if_else(label == 'Plus', 'Plus', 'No')) %>%
+        rename('p_no' = '1', 'p_pp' = '2', 'p_plus' = '3')
+}
+
+
+read_features <- function(dataset) {
+    read_csv(dataset) %>%
+        rename('image_path' = '0') %>%
+        separate(image_path, c(NA, NA, NA, NA, 'label', NA), remove = FALSE, sep = '/')
+}
+
+
+plot_roc <- function(dataset, save_name) {
+    png(save_name, width = 7, height = 5, units = 'in', res = 300)
+    pred <- prediction(dataset['p_plus'], dataset['is_plus'])
+    perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+    auc <- performance(pred, measure = "auc")
+    auc <- auc@y.values[[1]]
+    title <- paste('Real Images - ROC: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+    plot(perf, main = title, lwd=2)
+    abline(a= 0, b=1, col = 'red', lty = 'dashed', lwd=2)
+}
+
+
+plot_pr <- function(dataset, save_name) {
+    png(save_name, width = 7, height = 5, units = 'in', res = 300)
+    num_total <- nrow(dataset)
+    num_plus <- nrow(filter(dataset, label == 'Plus'))
+    pred <- prediction(dataset['p_plus'], dataset['is_plus'])
+    perf <- performance(pred, measure = "prec", x.measure = "rec")
+    auc <- performance(pred, measure = "aucpr")
+    auc <- auc@y.values[[1]]
+    title <- paste('PR: Plus vs Normal/Pre-plus [AUC = ', round(auc, 3), ']', sep = '')
+    plot(perf, main = title , ylim=c(0,1), lwd=2)
+    abline(a = num_plus/num_total, b = 0, col = 'red', lty = 'dashed', lwd=2)
+}
+
+
+boot_auc_pr <- function(dataset, indices) {
+    d <- dataset[indices,]
+    pred <- prediction(d['p_plus'], d['is_plus'])
+    auc <- performance(pred, measure = "aucpr")
+    auc <- auc@y.values[[1]]
+    auc
+}
+
+
+boot_auc_roc <- function(dataset, indices) {
+    d <- dataset[indices,]
+    pred <- prediction(d['p_plus'], d['is_plus'])
+    auc <- performance(pred, measure = "auc")
+    auc <- auc@y.values[[1]]
+    auc
+}
+```
+
+
+### Test predictions
+```{r message=FALSE}
+real_test <- read_predictions('./out/cnn/real_test_data_probabilities.csv')
+real_set_100 <- read_predictions('./out/cnn/real_set_100_probabilities.csv')
+
+synth_test <- read_predictions('./out/cnn/synth_test_data_probabilities.csv')
+synth_set_100 <- read_predictions('./out/cnn/synth_set_100_probabilities.csv')
+```
+
+
+### Features
+```{r message=FALSE}
+real_features <- read_features('./out/cnn/real_features.csv')
+synth_features <- read_features('./out/cnn/synth_features.csv')
+```
+
+
+
+### Real data
+```{r}
+plot_pr(real_test, './out/figures/real_pr.png')
+```
+
+```{r}
+plot_roc(real_test, './out/figures/real_roc.png')
+```
+
+```{r}
+confusionMatrix(real_set_100$prediction, real_set_100$label)
+```
+
+
+### Synthetic Data (natural disease distribution)
+```{r}
+plot_pr(synth_test, './out/figures/synth_pr.png')
+```
+
+```{r}
+plot_roc(synth_test, './out/figures/synth_roc.png')
+```
+
+```{r}
+confusionMatrix(synth_set_100$prediction, synth_set_100$label)
+```
+
+
+## Comparing PR Curves
+``` {r}
+real_boot <- boot(data = real_test, statistic = boot_auc_pr, R = 10000, sim = 'ordinary')
+real_boot
+boot.ci(real_boot, type="perc")
+plot(real_boot)
+```
+
+``` {r}
+synth_boot <- boot(data = synth_test, statistic = boot_auc_pr, R = 10000, sim = 'ordinary')
+synth_boot
+boot.ci(synth_boot, type="perc")
+plot(synth_boot)
+```
+
+
+
+
+## Comparing ROC Curves
+``` {r}
+real_boot <- boot(data = real_test, statistic = boot_auc_roc, R = 10000, sim = 'ordinary')
+real_boot
+boot.ci(real_boot, type="perc")
+plot(real_boot)
+```
+
+``` {r}
+synth_boot <- boot(data = synth_test, statistic = boot_auc_roc, R = 10000, sim = 'ordinary')
+synth_boot
+boot.ci(synth_boot, type="perc")
+plot(synth_boot)
+```
+
+```{r}
+roc.test(real_test$is_plus, real_test$p_plus, synth_test$p_plus, method = 'delong')
+```
+
+
+
+## UMAP
+```{r}
+config = umap.defaults
+config$random_state = 1337
+config$min_dist = 0.99
+config$metric = 'euclidean'
+config$n_neighbors = 25
+```
+
+
+# Generate UMAPs for PGAN data vs real data used to train PGAN
+```{r}
+train_umap <- umap(real_features[,3:ncol(real_features)], config = config)
+```
+
+
+```{r}
+synth_pred_fts <- synth_features %>%
+    select(-image_path, -label) %>%
+    predict(train_umap, .)
+```
+
+
+```{r}
+real_ft_pred <- real_features %>%
+    select(label) %>%
+    mutate(color = case_when(label == 1 ~ '#3e5629',
+                             label == 2 ~ 'darkorange4',
+                             label == 3 ~ 'red4')) %>%
+    cbind(train_umap$layout)
+
+synth_features %>%
+    select(label) %>%
+    mutate(color = case_when(label == 1 ~ '#73aa54',
+                             label == 2 ~ '#df8244',
+                             label == 3 ~ '#d84c54')) %>%
+    cbind(synth_pred_fts) %>%
+    ggplot() +
+        aes(x = `1`, y = `2`) +
+        geom_point(aes(color = color), shape = 16, alpha = 0.5, size = 2) +
+        geom_point(data = real_ft_pred, aes(color = color), shape = 17, size = 1.5) +
+        scale_color_identity() +
+        theme_base() +
+        # ggtitle('UMAP of Real Data Used to Train PGAN') +
+        scale_x_continuous(name = 'Vector 1', breaks = c(seq(-10, 10, 4))) +
+        scale_y_continuous(name = 'Vector 2', breaks = c(seq(-10, 10, 4)))
+
+ggsave('./out/figures/umap.png')
+```
