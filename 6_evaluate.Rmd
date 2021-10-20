@@ -4,7 +4,9 @@ output: html_notebook
 ---
 
 
-## Load libraries and data
+## Setup
+
+### Libraries and seed
 ```{r}
 library(tidyverse)
 library(ROCR)
@@ -18,7 +20,7 @@ set.seed(1337)
 ```
 
 
-
+### Helper functions
 ```{r}
 read_predictions <- function(dataset) {
     read_csv(dataset) %>%
@@ -81,23 +83,20 @@ boot_auc_roc <- function(dataset, indices) {
 ```
 
 
-### Test predictions
+### Load data
 ```{r message=FALSE}
 real_test <- read_predictions('./out/cnn/real_test_data_probabilities.csv')
 real_set_100 <- read_predictions('./out/cnn/real_set_100_probabilities.csv')
 
 synth_test <- read_predictions('./out/cnn/synth_test_data_probabilities.csv')
 synth_set_100 <- read_predictions('./out/cnn/synth_set_100_probabilities.csv')
-```
 
-
-### Features
-```{r message=FALSE}
 real_features <- read_features('./out/cnn/real_features.csv')
 synth_features <- read_features('./out/cnn/synth_features.csv')
 ```
 
 
+## Evaluate
 
 ### Real data
 ```{r}
@@ -113,7 +112,7 @@ confusionMatrix(real_set_100$prediction, real_set_100$label)
 ```
 
 
-### Synthetic Data (natural disease distribution)
+### Synthetic Data
 ```{r}
 plot_pr(synth_test, './out/figures/synth_pr.png')
 ```
@@ -127,7 +126,16 @@ confusionMatrix(synth_set_100$prediction, synth_set_100$label)
 ```
 
 
-## Comparing PR Curves
+### Compare confusion matrices
+```{r}
+confusion_matrices = array(c(54, 0, 0, 25, 6, 0, 2, 2, 11,
+                             54, 0, 0, 7, 14, 10, 0, 0, 15),
+                           dim=c(3, 3, 2))
+confusion_matrices
+mantelhaen.test(confusion_matrices)
+```
+
+### Compare PR curves
 ``` {r}
 real_boot <- boot(data = real_test, statistic = boot_auc_pr, R = 10000, sim = 'ordinary')
 real_boot
@@ -145,7 +153,7 @@ plot(synth_boot)
 
 
 
-## Comparing ROC Curves
+## Compare ROC curves
 ``` {r}
 real_boot <- boot(data = real_test, statistic = boot_auc_roc, R = 10000, sim = 'ordinary')
 real_boot
@@ -166,7 +174,7 @@ roc.test(real_test$is_plus, real_test$p_plus, synth_test$p_plus, method = 'delon
 
 
 
-## UMAP
+### UMAP
 ```{r}
 config = umap.defaults
 config$random_state = 1337
@@ -176,7 +184,7 @@ config$n_neighbors = 25
 ```
 
 
-# Generate UMAPs for PGAN data vs real data used to train PGAN
+#### Generate UMAPs for PGAN data vs real data used to train PGAN
 ```{r}
 train_umap <- umap(real_features[,3:ncol(real_features)], config = config)
 ```
