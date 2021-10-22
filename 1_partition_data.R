@@ -1,101 +1,88 @@
-library(tidyverse)
+library(fs)
+library(groupdata2)
 library(janitor)
 library(readxl)
+library(tidyverse)
 library(tools)
-library(fs)
 
 
+set_100 <- read_csv('./data/set_100.csv') %>%
+    select(subject_id)
 
-read_split <- function(file, sheet, join_with) {
-    split <- read_excel(file, sheet = sheet) %>%
-        clean_names() %>%
-        separate(original_files, c('subject_id', NA, 'session', NA, 'eye', NA), sep = '_') %>%
-        inner_join(join_with, by = c('subject_id', 'eye', 'session')) %>%
-        na_if('NULL.bmp') %>%
-        drop_na() %>%
-        select(subject_id, session, eye, ground_truth, posterior)
-    
-    split
-}
+segmentations <- data.frame(posterior = list.files('/Volumes/External/datasets/i-ROP/segmentations/'))
 
-
-
-data_irop <- read_csv('/Volumes/External/datasets/i-ROP/irop_07092020.csv') %>%
+data_irop <- read_xlsx('./data/6408posterior1202irop.xlsx') %>%
     clean_names() %>%
-    filter(reader == 'goldenstandardreading@ohsu.edu',
-           !str_detect(subject_id, 'APEC')) %>%
-    mutate(session = str_remove_all(session, '[ a-zA-Z]'),
-           posterior = paste(file_path_sans_ext(basename(posterior)), '.bmp', sep = '')) %>%
-    select(subject_id, eye, session, posterior)
-
-split_file = '/Volumes/External/datasets/i-ROP/all_splits_master_file.xlsx'
-split_1 <- read_split(split_file, sheet = 1, join_with = data_irop)
-split_2 <- read_split(split_file, sheet = 2, join_with = data_irop)
-split_3 <- read_split(split_file, sheet = 3, join_with = data_irop)
-split_4 <- read_split(split_file, sheet = 4, join_with = data_irop)
-split_5 <- read_split(split_file, sheet = 5, join_with = data_irop)
-
-data_train <- bind_rows(split_1, split_2, split_3)
-data_val <- split_4
-data_test <- split_5
-
-pgan_no <- data_train %>%
-    filter(ground_truth == 'No')
-
-pgan_preplus <- data_train %>%
-    filter(ground_truth == 'Pre-Plus')
-
-pgan_plus <- data_train %>%
-    filter(ground_truth == 'Plus')
+    rename(plus = golden_reading_plus) %>%
+    filter(!str_detect(subject_id, 'APEC'),
+           plus != 'Unknown') %>%
+    separate(subject_id, c('site', 'id')) %>%
+    mutate(subject_id = paste(toupper(site), id, sep = '-'),
+           plus = case_when(plus == 'No' ~ 1,
+                            plus == 'Pre-Plus' ~ 2,
+                            plus == 'Plus' ~ 3),
+           posterior = paste(basename(file_path_sans_ext(posterior)), 'bmp', sep = '.'),
+           across(c('subject_id', 'plus'), as.factor)) %>%
+    inner_join(segmentations, by = 'posterior') %>%
+    anti_join(set_100, by = 'subject_id') %>%
+    select(subject_id, plus, posterior)
 
 
-dir_create('./out/train/real/No')
-dir_create('./out/train/real/Pre-Plus')
-dir_create('./out/train/real/Plus')
+set.seed(1337)
+partitioned_data <- partition(data_irop,
+                              p = c(0.6, 0.2),
+                              id_col = 'subject_id')
 
-dir_create('./out/train/synthetic/No')
-dir_create('./out/train/synthetic/Pre-Plus')
-dir_create('./out/train/synthetic/Plus')
-
-dir_create('./out/val/No')
-dir_create('./out/val/Pre-Plus')
-dir_create('./out/val/Plus')
-
-dir_create('./out/test/No')
-dir_create('./out/test/Pre-Plus')
-dir_create('./out/test/Plus')
+train_data <- partitioned_data[[1]]
+val_data <- partitioned_data[[2]]
+test_data <- partitioned_data[[3]]
 
 
-write_csv(data_train, './out/train/cnn_train.csv')
-write_csv(data_val, './out/val/cnn_val.csv')
-write_csv(data_test, './out/test/cnn_test.csv')
+pgan_no <- train_data %>%
+    filter(plus == 1)
+
+pgan_preplus <- train_data %>%
+    filter(plus == 2)
+
+pgan_plus <- train_data %>%
+    filter(plus == 3)
+
+
+dir_create('./data/train/real/1')
+dir_create('./data/train/real/2')
+dir_create('./data/train/real/3')
+
+dir_create('./data/train/synthetic/1')
+dir_create('./data/train/synthetic/2')
+dir_create('./data/train/synthetic/3')
+
+dir_create('./data/val/1')
+dir_create('./data/val/2')
+dir_create('./data/val/3')
+
+dir_create('./data/test/1')
+dir_create('./data/test/2')
+dir_create('./data/test/3')
+
+
+write_csv(train_data, './data/train.csv')
+write_csv(val_data, './data/val.csv')
+write_csv(test_data, './data/test.csv')
 
 
 src = '/Volumes/External/datasets/i-ROP/segmentations'
 
-dst = './out/train/real'
-file_copy(paste(src, data_train$posterior, sep = '/'),
-          paste(dst, data_train$ground_truth, data_train$posterior, sep = '/'),
+dst = './data/train/real'
+file_copy(paste(src, train_data$posterior, sep = '/'),
+          paste(dst, train_data$plus, train_data$posterior, sep = '/'),
           overwrite = TRUE)
 
-dst = './out/val'
-file_copy(paste(src, data_val$posterior, sep = '/'),
-          paste(dst, data_val$ground_truth, data_val$posterior, sep = '/'),
+dst = './data/val'
+file_copy(paste(src, val_data$posterior, sep = '/'),
+          paste(dst, val_data$plus, val_data$posterior, sep = '/'),
           overwrite = TRUE)
 
-dst = './out/test'
-file_copy(paste(src, data_test$posterior, sep = '/'),
-          paste(dst, data_test$ground_truth, data_test$posterior, sep = '/'),
+dst = './data/test'
+file_copy(paste(src, test_data$posterior, sep = '/'),
+          paste(dst, test_data$plus, test_data$posterior, sep = '/'),
           overwrite = TRUE)
-
-file_move('./out/train/real/No', './out/train/real/1')
-file_move('./out/train/real/Pre-Plus', './out/train/real/2')
-file_move('./out/train/real/Plus', './out/train/real/3')
-
-file_move('./out/val/No', './out/val/1')
-file_move('./out/val/Pre-Plus', './out/val/2')
-file_move('./out/val/Plus', './out/val/3')
-
-file_move('./out/test/No', './out/test/1')
-file_move('./out/test/Pre-Plus', './out/test/2')
-file_move('./out/test/Plus', './out/test/3')
