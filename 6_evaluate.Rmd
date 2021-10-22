@@ -6,7 +6,7 @@ output: html_notebook
 
 ## Setup
 
-### Libraries and seed
+### Libraries
 ```{r}
 library(tidyverse)
 library(ROCR)
@@ -15,8 +15,18 @@ library(caret)
 library(boot)
 library(umap)
 library(ggthemes)
+```
 
+
+### Seed
+``` {r}
 set.seed(1337)
+```
+
+
+### Create directories
+```{r}
+dir_create('./data/figures')
 ```
 
 
