@@ -2,8 +2,8 @@
 .DS_Store
 
 ## Folders
+data/
 out/
-fid_images/
 
 ## R-related files
 .Rhistory
