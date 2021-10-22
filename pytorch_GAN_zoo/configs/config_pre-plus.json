@@ -1,5 +1,5 @@
 {
-  "pathDB": "./out/train/real/2",
+  "pathDB": "./data/train/real/2",
   "config": {
       "maxIterAtScale": [
           20000,
@@ -43,7 +43,6 @@
           128,
           64
       ],
-      "miniBatchSize": 16,
       "dimLatentVector": 128,
       "initBiasToZero": true,
       "perChannelNormalization": true,
@@ -58,5 +57,14 @@
       "weightConditionD": 0.0,
       "attribKeysOrder": null,
       "GDPP": false
+  },
+  "miniBatchScheduler": {
+      "0": 16,
+      "1": 16,
+      "2": 16,
+      "3": 16,
+      "4": 16,
+      "5": 8,
+      "6": 4
   }
 }
