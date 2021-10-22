@@ -143,12 +143,13 @@ class GANVisualizer():
         while remaining > 0:
             currBatch = min(remaining, maxBatchSize)
             noiseData, _ = self.model.buildNoiseData(currBatch)
-            img = self.model.test(noiseData, getAvG=True, toCPU=True)
+            images = self.model.test(noiseData, getAvG=True, toCPU=True)
 
             for i in range(currBatch):
-                imgPath = os.path.join(path, "gen_" + str(index) + ".jpg")
-                self.visualizer.saveTensor(img[i].view(1, 3, size[0], size[1]),
-                                           size, imgPath)
+                imgPath = os.path.join(path, "gen_" + str(index) + ".png")
+                img = images[i].view(1, 3, size[0], size[1])
+                img[img < 51] = 0
+                self.visualizer.saveTensor(img, size, imgPath)
                 index += 1
 
             remaining -= currBatch
