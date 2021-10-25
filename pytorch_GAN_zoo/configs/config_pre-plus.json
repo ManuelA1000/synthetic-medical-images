@@ -2,14 +2,14 @@
   "pathDB": "./data/train/real/2",
   "config": {
       "maxIterAtScale": [
-          20000,
-          30000,
-          40000,
-          40000,
-          40000,
-          40000,
-          40000
-      ],
+          48000,
+          96000,
+          96000,
+          96000,
+          96000,
+          96000,
+          96000,
+          96000],
       "alphaJumpMode": "linear",
       "alphaNJumps": [
           0,
@@ -41,9 +41,10 @@
           512,
           256,
           128,
-          64
+          64,
+          32
       ],
-      "dimLatentVector": 128,
+      "dimLatentVector": 512,
       "initBiasToZero": true,
       "perChannelNormalization": true,
       "lossMode": "WGANGP",
@@ -52,7 +53,7 @@
       "epsilonD": 0.001,
       "miniBatchStdDev": true,
       "baseLearningRate": 0.001,
-      "dimOutput": 3,
+      "dimOutput": 1,
       "weightConditionG": 0.0,
       "weightConditionD": 0.0,
       "attribKeysOrder": null,
@@ -64,7 +65,8 @@
       "2": 16,
       "3": 16,
       "4": 16,
-      "5": 8,
-      "6": 4
+      "5": 16,
+      "6": 8,
+      "7": 2
   }
 }

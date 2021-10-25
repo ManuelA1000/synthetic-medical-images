@@ -99,10 +99,10 @@ def test(parser, visualisation=None):
     visualizer = GANVisualizer(
         pathModel, modelConfig, modelType, visualisation)
 
-    if interpolationPath is None and not kwargs['random_interpolate']:
-        nImages = (256 // 2**(max(scale - 2, 3))) * 8
-        visualizer.exportVisualization(pathOut, nImages,
-                                       export_mask=exportMask)
+    # if interpolationPath is None and not kwargs['random_interpolate']:
+    #     nImages = (256 // 2**(max(scale - 2, 3))) * 8
+    #     visualizer.exportVisualization(pathOut, nImages,
+    #                                    export_mask=exportMask)
 
     toPlot = {}
     for key in keysLabels:

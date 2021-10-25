@@ -5,8 +5,16 @@ import torchvision.transforms as Transforms
 import torchvision.utils as vutils
 import numpy as np
 import random
+from PIL import Image
 
 vis = visdom.Visdom()
+
+
+def filter(img):
+    img = np.array(img)
+    img[img < 51] = 0
+    img = Image.fromarray(img)
+    return img
 
 
 def resizeTensor(data, out_size_image):
@@ -23,6 +31,7 @@ def resizeTensor(data, out_size_image):
 
     transform = Transforms.Compose([Transforms.Normalize((-1., -1., -1.), (2, 2, 2)),
                                     Transforms.ToPILImage(),
+                                    Transforms.Lambda(lambda x: filter(x)),
                                     Transforms.Resize(
                                         out_size_image, interpolation=interpolationMode),
                                     Transforms.ToTensor()])

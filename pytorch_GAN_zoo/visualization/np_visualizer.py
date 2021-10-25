@@ -39,9 +39,9 @@ def make_numpy_grid(arrays_list, gridMaxWidth=2048,
     outGrid += 255
 
     interp = {
-        'nearest': Image.NEAREST, 
-        'lanczos': Image.LANCZOS, 
-        'bilinear': Image.BILINEAR, 
+        'nearest': Image.NEAREST,
+        'lanczos': Image.LANCZOS,
+        'bilinear': Image.BILINEAR,
         'bicubic': Image.BICUBIC
     }
 
@@ -56,7 +56,8 @@ def make_numpy_grid(arrays_list, gridMaxWidth=2048,
             yStart = r * imgHeight
 
             img = np.array(arrays_list[indexImage])
-            img = Image.fromarray(np.transpose(img, (1,2,0)))
+            # img = Image.fromarray(np.transpose(img, (1,2,0)))
+            img = Image.fromarray(img)
 
             tmpImage = np.array(img.resize((imgSize, imgHeight), resample=interp[interpolation]))
 
