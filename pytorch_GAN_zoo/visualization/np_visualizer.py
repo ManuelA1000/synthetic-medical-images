@@ -21,8 +21,8 @@ def make_numpy_grid(arrays_list, gridMaxWidth=2048,
 
     gridMaxWidth = max(gridMaxWidth, W)
 
-    imgSize = max(W, imgMinSize)
-    imgHeight = int((float(imgSize) / W) * H)
+    imgSize = 640 #max(W, imgMinSize)
+    imgHeight = 480 #int((float(imgSize) / W) * H)
     nImgsPerRows = min(N, int(gridMaxWidth // imgSize))
 
     gridWidth = nImgsPerRows * imgSize
@@ -55,8 +55,8 @@ def make_numpy_grid(arrays_list, gridMaxWidth=2048,
             xStart = c * imgSize
             yStart = r * imgHeight
 
-            img = np.array(arrays_list[indexImage])
             # img = Image.fromarray(np.transpose(img, (1,2,0)))
+            img = np.array(arrays_list[indexImage])
             img = Image.fromarray(img)
 
             tmpImage = np.array(img.resize((imgSize, imgHeight), resample=interp[interpolation]))
