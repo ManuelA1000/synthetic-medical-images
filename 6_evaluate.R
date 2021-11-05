@@ -1,13 +1,4 @@
----
-title: "CNN Evaluation"
-output: html_notebook
----
-
-
-## Setup
-
-### Libraries
-```{r}
+library(here)
 library(tidyverse)
 library(ROCR)
 library(pROC)
@@ -15,23 +6,12 @@ library(caret)
 library(boot)
 library(umap)
 library(ggthemes)
-```
 
-
-### Seed
-``` {r}
+## set seed for repeatability
 set.seed(1337)
-```
 
 
-### Create directories
-```{r}
-dir_create('./data/figures')
-```
-
-
-### Helper functions
-```{r}
+## create helper functions
 read_predictions <- function(dataset) {
     read_csv(dataset) %>%
         mutate(label = factor(label, labels = c('Normal', 'Pre-Plus', 'Plus')),
@@ -90,124 +70,77 @@ boot_auc_roc <- function(dataset, indices) {
     auc <- auc@y.values[[1]]
     auc
 }
-```
 
 
-### Load data
-```{r message=FALSE}
-real_test <- read_predictions('./out/cnn/real_test_data_probabilities.csv')
-real_set_100 <- read_predictions('./out/cnn/real_set_100_probabilities.csv')
+## load data
+real_test <- read_predictions(here('out', 'cnn', 'real_test_data_probabilities.csv'))
+real_set_100 <- read_predictions(here('out', 'cnn', 'real_set_100_probabilities.csv'))
 
-synth_test <- read_predictions('./out/cnn/synth_test_data_probabilities.csv')
-synth_set_100 <- read_predictions('./out/cnn/synth_set_100_probabilities.csv')
+synth_test <- read_predictions(here('out', 'cnn', 'synthetic_test_data_probabilities.csv'))
+synth_set_100 <- read_predictions(here('out', 'cnn', 'synthetic_set_100_probabilities.csv'))
 
-real_features <- read_features('./out/cnn/real_features.csv')
-synth_features <- read_features('./out/cnn/synth_features.csv')
-```
+real_features <- read_features(here('out', 'cnn', 'real_features.csv'))
+synth_features <- read_features(here('out', 'cnn', 'synthetic_features.csv'))
 
 
-## Evaluate
+## assess precision-recall
+plot_pr(real_test, here('out', 'cnn', 'real_pr.png'))
+plot_pr(synth_test, here('out', 'cnn', 'synth_pr.png'))
 
-### Real data
-```{r}
-plot_pr(real_test, './out/figures/real_pr.png')
-```
-
-```{r}
-plot_roc(real_test, './out/figures/real_roc.png')
-```
-
-```{r}
-confusionMatrix(real_set_100$prediction, real_set_100$label)
-```
-
-
-### Synthetic Data
-```{r}
-plot_pr(synth_test, './out/figures/synth_pr.png')
-```
-
-```{r}
-plot_roc(synth_test, './out/figures/synth_roc.png')
-```
-
-```{r}
-confusionMatrix(synth_set_100$prediction, synth_set_100$label)
-```
-
-
-### Compare confusion matrices
-```{r}
-confusion_matrices = array(c(54, 0, 0, 25, 6, 0, 2, 2, 11,
-                             54, 0, 0, 7, 14, 10, 0, 0, 15),
-                           dim=c(3, 3, 2))
-confusion_matrices
-mantelhaen.test(confusion_matrices)
-```
-
-### Compare PR curves
-``` {r}
-real_boot <- boot(data = real_test, statistic = boot_auc_pr, R = 10000, sim = 'ordinary')
+real_boot <- boot(data = real_test, statistic = boot_auc_pr, R = 1000, sim = 'ordinary')
 real_boot
-boot.ci(real_boot, type="perc")
-plot(real_boot)
-```
+boot.ci(real_boot, type = "perc")
 
-``` {r}
-synth_boot <- boot(data = synth_test, statistic = boot_auc_pr, R = 10000, sim = 'ordinary')
+synth_boot <- boot(data = synth_test, statistic = boot_auc_pr, R = 1000, sim = 'ordinary')
 synth_boot
-boot.ci(synth_boot, type="perc")
-plot(synth_boot)
-```
+boot.ci(synth_boot, type = "perc")
+
+(sum(real_boot$t > synth_boot$t0) + 1) / (1000 + 1)
 
 
+## assess receiver operating characteristics
+plot_roc(real_test, here('out', 'cnn', 'real_pr.png'))
+plot_roc(synth_test, here('out', 'cnn', 'synth_pr.png'))
 
-
-## Compare ROC curves
-``` {r}
-real_boot <- boot(data = real_test, statistic = boot_auc_roc, R = 10000, sim = 'ordinary')
+real_boot <- boot(data = real_test, statistic = boot_auc_roc, R = 1000, sim = 'ordinary')
 real_boot
-boot.ci(real_boot, type="perc")
-plot(real_boot)
-```
+boot.ci(real_boot, type = "perc")
 
-``` {r}
-synth_boot <- boot(data = synth_test, statistic = boot_auc_roc, R = 10000, sim = 'ordinary')
+synth_boot <- boot(data = synth_test, statistic = boot_auc_roc, R = 1000, sim = 'ordinary')
 synth_boot
-boot.ci(synth_boot, type="perc")
-plot(synth_boot)
-```
+boot.ci(synth_boot, type = "perc")
 
-```{r}
+(sum(real_boot$t > synth_boot$t0) + 1) / (1001)
+
 roc.test(real_test$is_plus, real_test$p_plus, synth_test$p_plus, method = 'delong')
-```
 
 
+## assess expert test set performance
+confusionMatrix(real_set_100$prediction, real_set_100$label)
+confusion_matrices = array(c(54, 0, 0, 0, 31, 0, 0, 0, 15,
+                             54, 0, 0, 8, 23, 0, 1, 3, 11),
+                           dim=c(3, 3, 2))
+mantelhaen.test(confusion_matrices)
 
-### UMAP
-```{r}
+confusionMatrix(synth_set_100$prediction, synth_set_100$label)
+confusion_matrices = array(c(54, 0, 0, 0, 31, 0, 0, 0, 15,
+                             52, 2, 0, 4, 19, 8, 0, 1, 14),
+                           dim=c(3, 3, 2))
+mantelhaen.test(confusion_matrices)
+
+
+## create UMAP embedding
 config = umap.defaults
 config$random_state = 1337
 config$min_dist = 0.99
 config$metric = 'euclidean'
-config$n_neighbors = 25
-```
 
-
-#### Generate UMAPs for PGAN data vs real data used to train PGAN
-```{r}
 train_umap <- umap(real_features[,3:ncol(real_features)], config = config)
-```
 
-
-```{r}
 synth_pred_fts <- synth_features %>%
     select(-image_path, -label) %>%
     predict(train_umap, .)
-```
 
-
-```{r}
 real_ft_pred <- real_features %>%
     select(label) %>%
     mutate(color = case_when(label == 1 ~ '#3e5629',
@@ -227,9 +160,10 @@ synth_features %>%
         geom_point(data = real_ft_pred, aes(color = color), shape = 17, size = 1.5) +
         scale_color_identity() +
         theme_base() +
-        # ggtitle('UMAP of Real Data Used to Train PGAN') +
         scale_x_continuous(name = 'Vector 1', breaks = c(seq(-10, 10, 4))) +
         scale_y_continuous(name = 'Vector 2', breaks = c(seq(-10, 10, 4)))
 
-ggsave('./out/figures/umap.png')
-```
+ggsave('./out/umap/umap.png')
+
+write_csv(as.data.frame(train_umap$layout), here('out', 'umap', 'train_layout.csv'))
+write_csv(as.data.frame(synth_pred_fts), here('out', 'umap', 'synth_layout.csv'))
