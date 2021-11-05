@@ -50,23 +50,23 @@ except ImportError:
     def tqdm(x):
         return x
 
-from inception import InceptionV3
+from .inception import InceptionV3
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('--batch-size', type=int, default=50,
                     help='Batch size to use')
-parser.add_argument('--num-workers', type=int,
+parser.add_argument('--num-workers', type=int, default=8,
                     help=('Number of processes to use for data loading. '
                           'Defaults to `min(8, num_cpus)`'))
-parser.add_argument('--device', type=str, default=None,
+parser.add_argument('--device', type=str, default='cuda:0',
                     help='Device to use. Like cuda, cuda:0 or cpu')
 parser.add_argument('--dims', type=int, default=2048,
                     choices=list(InceptionV3.BLOCK_INDEX_BY_DIM),
                     help=('Dimensionality of Inception features to use. '
                           'By default, uses pool3 features'))
-parser.add_argument('path', type=str, nargs=2,
-                    help=('Paths to the generated images or '
-                          'to .npz statistic files'))
+# parser.add_argument('path', type=str, nargs=2,
+#                     help=('Paths to the generated images or '
+#                           'to .npz statistic files'))
 
 IMAGE_EXTENSIONS = {'bmp', 'jpg', 'jpeg', 'pgm', 'png', 'ppm',
                     'tif', 'tiff', 'webp'}
@@ -270,7 +270,7 @@ def calculate_fid_given_paths(paths, batch_size, device, dims, num_workers=1):
     return fid_value
 
 
-def main():
+def main(paths):
     args = parser.parse_args()
 
     if args.device is None:
@@ -283,8 +283,8 @@ def main():
         num_workers = min(num_avail_cpus, 8)
     else:
         num_workers = args.num_workers
-
-    fid_value = calculate_fid_given_paths(args.path,
+    print(paths)
+    fid_value = calculate_fid_given_paths(paths, #args.path,
                                           args.batch_size,
                                           device,
                                           args.dims,

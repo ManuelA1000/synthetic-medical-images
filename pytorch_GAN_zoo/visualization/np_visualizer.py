@@ -21,8 +21,8 @@ def make_numpy_grid(arrays_list, gridMaxWidth=2048,
 
     gridMaxWidth = max(gridMaxWidth, W)
 
-    imgSize = 640 #max(W, imgMinSize)
-    imgHeight = 480 #int((float(imgSize) / W) * H)
+    imgSize = max(W, imgMinSize)
+    imgHeight = int((float(imgSize) / W) * H)
     nImgsPerRows = min(N, int(gridMaxWidth // imgSize))
 
     gridWidth = nImgsPerRows * imgSize

@@ -184,7 +184,6 @@ class GNet(nn.Module):
                                                       feature.size(3)), device=x.device))
             feature = self.activation(feature)
             feature = group[3](feature, mapping)
-
             if self.alpha > 0 and nLayer == len(self.scaleLayers) -2:
                 y = self.toRGBLayers[-2](feature)
                 y = Upscale2d(y)
