@@ -22,9 +22,6 @@ from torchvision import models, transforms
 class PretrainedModel(nn.Module):
     def __init__(self, output_features):
         super().__init__()
-        # model = models.vgg11_bn(pretrained=True)
-        # num_ftrs = model.classifier[6].in_features
-        # model.classifier[6] = nn.Linear(num_ftrs, output_features)
         model = models.resnet18(pretrained=True)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, output_features)
@@ -137,8 +134,6 @@ def train(train_data, val_data, args):
 
 
 def test(net, datasets, types, class_names, args):
-    # net.module_.model.classifier[6] = nn.Sequential(net.module_.model.classifier[6],
-    #                                                 nn.Softmax(dim=1))
     net.module_.model.fc = nn.Sequential(net.module_.model.fc,
                                          nn.Softmax(dim=1))
     for data, type in zip(datasets, types):
@@ -158,7 +153,6 @@ def test(net, datasets, types, class_names, args):
 
 def extract(net, datasets, types, args):
     net.module_.model.eval()
-    # net.module_.model.classifier[6] = nn.Identity()
     net.module_.model.fc = nn.Identity()
     for data, type in zip(datasets, types):
         print()
