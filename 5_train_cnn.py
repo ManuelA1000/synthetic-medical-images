@@ -22,12 +22,12 @@ from torchvision import models, transforms
 class PretrainedModel(nn.Module):
     def __init__(self, output_features):
         super().__init__()
-        model = models.vgg11_bn(pretrained=True)
-        num_ftrs = model.classifier[6].in_features
-        model.classifier[6] = nn.Linear(num_ftrs, output_features)
-        # model = models.resnet18(pretrained=True)
-        # num_ftrs = model.fc.in_features
-        # model.fc = nn.Linear(num_ftrs, output_features)
+        # model = models.vgg11_bn(pretrained=True)
+        # num_ftrs = model.classifier[6].in_features
+        # model.classifier[6] = nn.Linear(num_ftrs, output_features)
+        model = models.resnet18(pretrained=True)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, output_features)
         self.model = model
 
     def forward(self, x):
@@ -42,22 +42,37 @@ def set_device():
     return device
 
 
+def filter(img):
+    img = np.array(img)
+    img[img < 51] = 0
+    img = Image.fromarray(img)
+    return img
+
+
 def prepare_data(dataset, args):
-    assert dataset in ['train', 'val', 'test', 'set_100', 'synth']
+    assert dataset in ['train', 'val', 'test', 'set_100', 'synthetic']
     if dataset == 'train':
-        transform = transforms.Compose([transforms.Resize((args.image_size, args.image_size)),
+        transform = transforms.Compose([transforms.Resize((args.image_size,
+                                                           args.image_size)),
+                                        transforms.Lambda(lambda img: filter(img)),
                                         transforms.RandomHorizontalFlip(),
                                         transforms.RandomVerticalFlip(),
-                                        transforms.RandomRotation(45),
+                                        transforms.RandomRotation(20),
                                         transforms.ToTensor(),
-                                        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+                                        transforms.Normalize([0.5, 0.5, 0.5],
+                                                             [0.5, 0.5, 0.5])])
         input_dir = os.path.join(args.input_dir, dataset, args.image_type)
     else:
-        transform = transforms.Compose([transforms.Resize((args.image_size, args.image_size)),
+        transform = transforms.Compose([transforms.Resize((args.image_size,
+                                                           args.image_size)),
+                                        transforms.Lambda(lambda img: filter(img)),
                                         transforms.ToTensor(),
-                                        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
-        if dataset == 'synth':
-            input_dir = os.path.join(args.input_dir, 'train', 'synth_even')
+                                        transforms.Normalize([0.5, 0.5, 0.5],
+                                                             [0.5, 0.5, 0.5])])
+        if dataset == 'synthetic':
+            input_dir = os.path.join(args.input_dir, 'train', 'synthetic')
+        elif dataset == 'val':
+            input_dir = os.path.join(args.input_dir, dataset, args.image_type)
         else:
             input_dir = os.path.join(args.input_dir, dataset)
     data = ImageFolder(input_dir, transform)
@@ -72,14 +87,16 @@ def configure_sampler(train_data):
     print(f'class_weights: {class_weights.tolist()}')
     print()
     image_weights = class_weights[image_labels]
-    sampler = WeightedRandomSampler(image_weights, len(train_data), replacement=True)
+    sampler = WeightedRandomSampler(image_weights,
+                                    len(train_data),
+                                    replacement=True)
     return sampler
 
 
 def configure_callbacks(args):
     f_params = os.path.join(args.output_dir, f'{args.image_type}_model.pt')
     f_history = os.path.join(args.output_dir, f'{args.image_type}_history.json')
-    checkpoint = Checkpoint(monitor='valid_loss_best',
+    checkpoint = Checkpoint(monitor='valid_acc_best',
                             f_params=f_params,
                             f_history=f_history,
                             f_optimizer=None,
@@ -88,8 +105,8 @@ def configure_callbacks(args):
                              on_train=True,
                              name='train_acc',
                              lower_is_better=False)
-    early_stopping = EarlyStopping(monitor='valid_loss',
-                                   lower_is_better=True,
+    early_stopping = EarlyStopping(monitor='valid_acc',
+                                   lower_is_better=False,
                                    patience=args.patience)
     callbacks = [checkpoint, train_acc, early_stopping]
     return callbacks
@@ -107,7 +124,6 @@ def train(train_data, val_data, args):
                               max_epochs=args.num_epochs,
                               module__output_features=len(train_data.classes),
                               optimizer=optim.Adam,
-                              # optimizer__momentum=0.9,
                               iterator_train__num_workers=args.num_workers,
                               iterator_train__sampler=sampler,
                               iterator_train__shuffle=True if sampler == None else False,
@@ -121,10 +137,10 @@ def train(train_data, val_data, args):
 
 
 def test(net, datasets, types, class_names, args):
-    net.module_.model.classifier[6] = nn.Sequential(net.module_.model.classifier[6],
-                                                    nn.Softmax(dim=1))
-    # net.module_.model.fc = nn.Sequential(net.module_.model.fc,
-    #                                      nn.Softmax(dim=1))
+    # net.module_.model.classifier[6] = nn.Sequential(net.module_.model.classifier[6],
+    #                                                 nn.Softmax(dim=1))
+    net.module_.model.fc = nn.Sequential(net.module_.model.fc,
+                                         nn.Softmax(dim=1))
     for data, type in zip(datasets, types):
         print()
         print(f'Predicting probabilities from {type}...')
@@ -142,8 +158,8 @@ def test(net, datasets, types, class_names, args):
 
 def extract(net, datasets, types, args):
     net.module_.model.eval()
-    net.module_.model.classifier[6] = nn.Identity()
-    # net.module_.model.fc = nn.Identity()
+    # net.module_.model.classifier[6] = nn.Identity()
+    net.module_.model.fc = nn.Identity()
     for data, type in zip(datasets, types):
         print()
         print(f'Extracting features from {type}...')
@@ -163,13 +179,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--learning_rate', type=float, default=0.001)
-    parser.add_argument('--image_type', type=str, choices=['real', 'synth'])
+    parser.add_argument('--image_type', type=str, choices=['real', 'synthetic'])
     parser.add_argument('--image_size', type=int, default=224)
     parser.add_argument('--input_dir', type=str, default='./data/')
     parser.add_argument('--num_epochs', type=int, default=50)
     parser.add_argument('--num_workers', type=int, default=16)
     parser.add_argument('--output_dir', type=str, default='./out/cnn')
-    parser.add_argument('--patience', type=int, default=5)
+    parser.add_argument('--patience', type=int, default=10)
     return parser.parse_args()
 
 
@@ -196,5 +212,5 @@ if __name__ == '__main__':
     types = ['test_data', 'set_100']
     test(net, datasets, types, class_names, args)
     if args.image_type == 'real':
-        synth_data = prepare_data('synth', args)
-        extract(net, [train_data, synth_data], ['real', 'synth'], args)
+        synth_data = prepare_data('synthetic', args)
+        extract(net, [train_data, synth_data], ['real', 'synthetic'], args)
