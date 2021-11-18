@@ -43,7 +43,6 @@ val_test = val_test_df.to_numpy()
 
 print('\nCalculating distances: train vs val_test...')
 dist = euclidean_distances(train[:, 1:], val_test[:, 1:])
-dist[dist < 5.7] = np.nan
 print(np.nanmin(dist))
 indices = np.unravel_index(np.nanargmin(dist), dist.shape)
 print(train[indices[0], 0])
@@ -51,7 +50,6 @@ print(val_test[indices[1], 0])
 
 print('\nCalculating distances: train vs synth...')
 dist = euclidean_distances(train[:, 1:], synth[:, 1:])
-dist[dist < 6.15] = np.nan
 print(np.nanmin(dist))
 indices = np.unravel_index(np.nanargmin(dist), dist.shape)
 print(train[indices[0], 0])
@@ -60,7 +58,6 @@ print(synth[indices[1], 0])
 
 print('\nCalculating distances: train vs train...')
 dist = euclidean_distances(train[:, 1:], train[:, 1:])
-dist[dist < 5.48] = np.nan
 print(np.nanmin(dist))
 indices = np.unravel_index(np.nanargmin(dist), dist.shape)
 print(train[indices[0], 0])

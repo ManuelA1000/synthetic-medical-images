@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import argparse
 import os
 
@@ -189,12 +186,12 @@ if __name__ == '__main__':
     set_100 = prepare_data(INPUT_DIR, 'set_100', 'real')
     synth_data = prepare_data(INPUT_DIR, 'synthetic')
 
-    # net = train(OUTPUT_DIR, train_data, val_data, 'real')
-    # class_names = train_data.classes
-    # datasets = [test_data, set_100]
-    # test_types = ['test_data', 'set_100']
-    # test(OUTPUT_DIR, net, datasets, test_types, class_names, 'real')
-    # extract(OUTPUT_DIR, net, [train_data, synth_data], ['real', 'synthetic'])
+    net = train(OUTPUT_DIR, train_data, val_data, 'real')
+    class_names = train_data.classes
+    datasets = [test_data, set_100]
+    test_types = ['test_data', 'set_100']
+    test(OUTPUT_DIR, net, datasets, test_types, class_names, 'real')
+    extract(OUTPUT_DIR, net, [train_data, synth_data], ['real', 'synthetic'])
 
     train_data = prepare_data(INPUT_DIR, 'train', 'synthetic')
     val_data = prepare_data(INPUT_DIR, 'val', 'synthetic')
