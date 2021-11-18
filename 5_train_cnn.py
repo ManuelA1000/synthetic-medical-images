@@ -31,68 +31,50 @@ class PretrainedModel(nn.Module):
         return self.model(x)
 
 
-def set_device():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if device == 'cuda':
-        torch.cuda.empty_cache()
-    print(f'device: {device}')
-    return device
+def extract(output_dir, net, datasets, test_types):
+    net.module_.model.eval()
+    net.module_.model.fc = nn.Identity()
+    for dataset, test_type in zip(datasets, test_types):
+        print()
+        print(f'Extracting features from {test_type}.')
+        features = net.forward(dataset)
+        img_locs = [x[0] for x in dataset.samples]
+        csv_data = []
+        for index, img_loc in enumerate(img_locs):
+            row_data = [img_loc]
+            row_data.extend(features[index].tolist())
+            csv_data.append(row_data)
+        csv_name = os.path.join(output_dir, f'{test_type}_features.csv')
+        pd.DataFrame(csv_data).to_csv(csv_name, index=False)
+        print(f'Feature outputs written to: {csv_name}')
 
 
-def filter(img):
-    img = np.array(img)
-    img[img < 51] = 0
-    img = Image.fromarray(img)
-    return img
-
-
-def prepare_data(dataset, args):
-    assert dataset in ['train', 'val', 'test', 'set_100', 'synthetic']
-    if dataset == 'train':
-        transform = transforms.Compose([transforms.Resize((args.image_size,
-                                                           args.image_size)),
-                                        transforms.Lambda(lambda img: filter(img)),
-                                        transforms.RandomHorizontalFlip(),
-                                        transforms.RandomVerticalFlip(),
-                                        transforms.RandomRotation(20),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.5, 0.5, 0.5],
-                                                             [0.5, 0.5, 0.5])])
-        input_dir = os.path.join(args.input_dir, dataset, args.image_type)
-    else:
-        transform = transforms.Compose([transforms.Resize((args.image_size,
-                                                           args.image_size)),
-                                        transforms.Lambda(lambda img: filter(img)),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.5, 0.5, 0.5],
-                                                             [0.5, 0.5, 0.5])])
-        if dataset == 'synthetic':
-            input_dir = os.path.join(args.input_dir, 'train', 'synthetic')
-        elif dataset == 'val':
-            input_dir = os.path.join(args.input_dir, dataset, args.image_type)
+def test(output_dir, net, datasets, test_types, class_names, image_type):
+    for data, test_type in zip(datasets, test_types):
+        print()
+        print(f'Predicting probabilities from {test_type}...')
+        probs = net.predict_proba(data)
+        preds = net.predict(data)
+        img_paths = [x[0] for x in data.samples]
+        labels = data.targets
+        csv_data = {'image_path': img_paths,
+                    'label': labels,
+                    'prediction': preds}
+        for index, class_name in enumerate(class_names):
+            csv_data[class_name] = probs[:,index]
+        if image_type == 'synthetic':
+            csv_name = os.path.join(output_dir,
+                                    f'{image_type}_{test_type}_probabilities.csv')
         else:
-            input_dir = os.path.join(args.input_dir, dataset)
-    data = ImageFolder(input_dir, transform)
-    return data
+            csv_name = os.path.join(output_dir,
+                                    f'{image_type}_{test_type}_probabilities.csv')
+        pd.DataFrame(data=csv_data).to_csv(csv_name, index=False)
+        print(f'Probability outputs written to: {csv_name}')
 
 
-def configure_sampler(train_data):
-    image_labels = train_data.targets
-    class_names = [int(x) - 1 for x in train_data.classes]
-    class_weights = np.array([1 / image_labels.count(class_name) for class_name in class_names])
-    class_weights /= np.amin(class_weights)
-    print(f'class_weights: {class_weights.tolist()}')
-    print()
-    image_weights = class_weights[image_labels]
-    sampler = WeightedRandomSampler(image_weights,
-                                    len(train_data),
-                                    replacement=True)
-    return sampler
-
-
-def configure_callbacks(args):
-    f_params = os.path.join(args.output_dir, f'{args.image_type}_model.pt')
-    f_history = os.path.join(args.output_dir, f'{args.image_type}_history.json')
+def configure_callbacks(image_type, output_dir, patience):
+    f_params = os.path.join(output_dir, f'{image_type}_model.pt')
+    f_history = os.path.join(output_dir, f'{image_type}_history.json')
     checkpoint = Checkpoint(monitor='valid_acc_best',
                             f_params=f_params,
                             f_history=f_history,
@@ -104,28 +86,52 @@ def configure_callbacks(args):
                              lower_is_better=False)
     early_stopping = EarlyStopping(monitor='valid_acc',
                                    lower_is_better=False,
-                                   patience=args.patience)
+                                   patience=patience)
     callbacks = [checkpoint, train_acc, early_stopping]
     return callbacks
 
 
-def train(train_data, val_data, args):
+def configure_sampler(train_data):
+    labels = train_data.targets
+    c_names = [int(x) - 1 for x in train_data.classes]
+    c_weights = np.array([1 / labels.count(c_name) for c_name in c_names])
+    c_weights /= np.amin(c_weights)
+    print(f'class_weights: {c_weights.tolist()}')
+    print()
+    img_weights = c_weights[labels]
+    sampler = WeightedRandomSampler(img_weights,
+                                    len(train_data),
+                                    replacement=True)
+    return sampler
+
+
+def set_device():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device == 'cuda':
+        torch.cuda.empty_cache()
+    print(f'device: {device}')
+    return device
+
+
+def train(output_dir, train_data, val_data, image_type,
+          batch_size=32, learning_rate=0.001, num_epochs=50, num_workers=16, patience=10):
     device = set_device()
     sampler = configure_sampler(train_data)
-    callbacks = configure_callbacks(args)
-    print('Training model...')
+    callbacks = configure_callbacks(image_type, output_dir, patience)
+    shuffle = True if sampler == None else False
+    print('Training model.')
     net = NeuralNetClassifier(PretrainedModel,
                               criterion=nn.CrossEntropyLoss,
-                              lr=args.learning_rate,
-                              batch_size=args.batch_size,
-                              max_epochs=args.num_epochs,
+                              lr=learning_rate,
+                              batch_size=batch_size,
+                              max_epochs=num_epochs,
                               module__output_features=len(train_data.classes),
                               optimizer=optim.Adam,
-                              iterator_train__num_workers=args.num_workers,
+                              iterator_train__num_workers=num_workers,
                               iterator_train__sampler=sampler,
-                              iterator_train__shuffle=True if sampler == None else False,
+                              iterator_train__shuffle=shuffle,
                               iterator_valid__shuffle=False,
-                              iterator_valid__num_workers=args.num_workers,
+                              iterator_valid__num_workers=num_workers,
                               train_split=predefined_split(val_data),
                               callbacks=callbacks,
                               device=device)
@@ -133,78 +139,67 @@ def train(train_data, val_data, args):
     return net
 
 
-def test(net, datasets, types, class_names, args):
-    net.module_.model.fc = nn.Sequential(net.module_.model.fc,
-                                         nn.Softmax(dim=1))
-    for data, type in zip(datasets, types):
-        print()
-        print(f'Predicting probabilities from {type}...')
-        probs = net.predict_proba(data)
-        preds = net.predict(data)
-        img_paths = [x[0] for x in data.samples]
-        labels = data.targets
-        csv_data = {'image_path': img_paths, 'label': labels, 'prediction': preds}
-        for index, class_name in enumerate(class_names):
-            csv_data[class_name] = probs[:,index]
-        csv_name = os.path.join(args.output_dir, f'{args.image_type}_{type}_probabilities.csv')
-        pd.DataFrame(data=csv_data).to_csv(csv_name, index=False)
-        print(f'Probability outputs written to: {csv_name}')
+def filter(img):
+    img = np.array(img)
+    img[img < 51] = 0
+    img = Image.fromarray(img)
+    return img
 
 
-def extract(net, datasets, types, args):
-    net.module_.model.eval()
-    net.module_.model.fc = nn.Identity()
-    for data, type in zip(datasets, types):
-        print()
-        print(f'Extracting features from {type}...')
-        features = net.forward(data)
-        img_locs = [x[0] for x in data.samples]
-        csv_data = []
-        for index, img_loc in enumerate(img_locs):
-            row_data = [img_loc]
-            row_data.extend(features[index].tolist())
-            csv_data.append(row_data)
-        csv_name = os.path.join(args.output_dir, f'{type}_features.csv')
-        pd.DataFrame(csv_data).to_csv(csv_name, index=False)
-        print(f'Feature outputs written to: {csv_name}')
+def prepare_data(input_dir, dataset,
+                 image_type=None, image_size=(224,224)):
+    if dataset == 'train':
+        transform = transforms.Compose([transforms.Resize(image_size),
+                                        transforms.Lambda(lambda img: filter(img)),
+                                        transforms.RandomHorizontalFlip(),
+                                        transforms.RandomVerticalFlip(),
+                                        transforms.RandomRotation(20),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+        input_dir = os.path.join(input_dir, dataset, image_type)
+    else:
+        transform = transforms.Compose([transforms.Resize(image_size),
+                                        transforms.Lambda(lambda img: filter(img)),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+        if dataset == 'synthetic':
+            input_dir = os.path.join(input_dir, 'train', 'synthetic')
+        elif dataset == 'val':
+            input_dir = os.path.join(input_dir, dataset, image_type)
+        else:
+            input_dir = os.path.join(input_dir, dataset)
+    data = ImageFolder(input_dir, transform)
+    return data
 
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--learning_rate', type=float, default=0.001)
-    parser.add_argument('--image_type', type=str, choices=['real', 'synthetic'])
-    parser.add_argument('--image_size', type=int, default=224)
-    parser.add_argument('--input_dir', type=str, default='./data/')
-    parser.add_argument('--num_epochs', type=int, default=50)
-    parser.add_argument('--num_workers', type=int, default=16)
-    parser.add_argument('--output_dir', type=str, default='./out/cnn')
-    parser.add_argument('--patience', type=int, default=10)
-    return parser.parse_args()
 
 
 if __name__ == '__main__':
+
     torch.multiprocessing.set_sharing_strategy('file_system')
 
-    args = parse_args()
-    print()
-    for arg in vars(args):
-        print(f'{arg}: {getattr(args, arg)}')
+    INPUT_DIR = './data/'
+    OUTPUT_DIR = './out/cnn/'
 
-    if not os.path.isdir(args.output_dir):
-        os.makedirs(args.output_dir)
+    if not os.path.isdir(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
 
-    train_data = prepare_data('train', args)
-    val_data = prepare_data('val', args)
-    test_data = prepare_data('test', args)
-    set_100 = prepare_data('set_100', args)
+    train_data = prepare_data(INPUT_DIR, 'train', 'real')
+    val_data = prepare_data(INPUT_DIR, 'val', 'real')
+    test_data = prepare_data(INPUT_DIR, 'test', 'real')
+    set_100 = prepare_data(INPUT_DIR, 'set_100', 'real')
+    synth_data = prepare_data(INPUT_DIR, 'synthetic')
 
-    net = train(train_data, val_data, args)
+    # net = train(OUTPUT_DIR, train_data, val_data, 'real')
+    # class_names = train_data.classes
+    # datasets = [test_data, set_100]
+    # test_types = ['test_data', 'set_100']
+    # test(OUTPUT_DIR, net, datasets, test_types, class_names, 'real')
+    # extract(OUTPUT_DIR, net, [train_data, synth_data], ['real', 'synthetic'])
 
+    train_data = prepare_data(INPUT_DIR, 'train', 'synthetic')
+    val_data = prepare_data(INPUT_DIR, 'val', 'synthetic')
+    net = train(OUTPUT_DIR, train_data, val_data, 'synthetic')
     class_names = train_data.classes
     datasets = [test_data, set_100]
-    types = ['test_data', 'set_100']
-    test(net, datasets, types, class_names, args)
-    if args.image_type == 'real':
-        synth_data = prepare_data('synthetic', args)
-        extract(net, [train_data, synth_data], ['real', 'synthetic'], args)
+    test_types = ['test_data', 'set_100']
+    test(OUTPUT_DIR, net, datasets, test_types, class_names, 'synthetic')
