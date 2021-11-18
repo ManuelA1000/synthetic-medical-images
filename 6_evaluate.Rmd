@@ -113,6 +113,7 @@ roc.test(real_test$plus_label,
          synthetic_test$p_plus,
          method = 'bootstrap',
          boot.n = 1000,
+         progress = 'none',
          quiet = TRUE)
 ```
 
