@@ -13,6 +13,43 @@ import torch.optim as optim
 from torch.utils.data import Dataset, WeightedRandomSampler
 from torchvision.datasets import ImageFolder
 from torchvision import models, transforms
+from sklearn.model_selection import train_test_split
+import shutil
+
+
+
+def split_dataset_into_train_val_test(datadir, train_ratio=0.7, val_ratio=0.15):
+    # Ensure input ratios are correct
+    assert train_ratio >= 0 and train_ratio <= 1.0, "Invalid training set ratio"
+    assert val_ratio >= 0 and val_ratio <= 1.0, "Invalid validation set ratio"
+    assert train_ratio + val_ratio <= 1.0, "Sum of training and validation set ratios should be <= 1"
+
+    # Get list of classes (subdirectories) in the input directory
+    classes = os.listdir(datadir)
+    for cls in classes:
+        clsdir = os.path.join(datadir, cls)
+        if not os.path.isdir(clsdir):
+            continue
+
+        # Get list of image files for this class
+        images = os.listdir(clsdir)
+
+        # Split the images into training, validation and test sets
+        train_images, rem_images = train_test_split(images, train_size=train_ratio)
+        val_images, test_images = train_test_split(rem_images, train_size=val_ratio/(1-train_ratio))
+
+        # Create output directories if they do not exist
+        for outdir in ['train', 'val', 'test']:
+            if not os.path.isdir(os.path.join(datadir, outdir)):
+                os.makedirs(os.path.join(datadir, outdir))
+
+        # Copy the images into the corresponding directories
+        for image in train_images:
+            shutil.copy(os.path.join(clsdir, image), os.path.join(datadir, 'train', cls))
+        for image in val_images:
+            shutil.copy(os.path.join(clsdir, image), os.path.join(datadir, 'val', cls))
+        for image in test_images:
+            shutil.copy(os.path.join(clsdir, image), os.path.join(datadir, 'test', cls))
 
 
 
@@ -174,29 +211,27 @@ if __name__ == '__main__':
 
     torch.multiprocessing.set_sharing_strategy('file_system')
 
-    INPUT_DIR = './data/'
+    INPUT_DIR = 'D:/ROP/fscyyhg6vt-1/DATASET'
     OUTPUT_DIR = './out/cnn/'
+
+    # Split the dataset into train, validation, and test sets
+    split_dataset_into_train_val_test(INPUT_DIR)
 
     if not os.path.isdir(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    train_data = prepare_data(INPUT_DIR, 'train', 'real')
-    val_data = prepare_data(INPUT_DIR, 'val', 'real')
-    test_data = prepare_data(INPUT_DIR, 'test', 'real')
-    set_100 = prepare_data(INPUT_DIR, 'set_100', 'real')
-    synth_data = prepare_data(INPUT_DIR, 'synthetic')
+    # Prepare the datasets
+    train_data = prepare_data(INPUT_DIR, 'train')
+    val_data = prepare_data(INPUT_DIR, 'val')
+    test_data = prepare_data(INPUT_DIR, 'test')
 
-    net = train(OUTPUT_DIR, train_data, val_data, 'real')
-    class_names = train_data.classes
-    datasets = [test_data, set_100]
-    test_types = ['test_data', 'set_100']
-    test(OUTPUT_DIR, net, datasets, test_types, class_names, 'real')
-    extract(OUTPUT_DIR, net, [train_data, synth_data], ['real', 'synthetic'])
+    # Train the model
+    net = train(OUTPUT_DIR, train_data, val_data)
 
-    train_data = prepare_data(INPUT_DIR, 'train', 'synthetic')
-    val_data = prepare_data(INPUT_DIR, 'val', 'synthetic')
-    net = train(OUTPUT_DIR, train_data, val_data, 'synthetic')
     class_names = train_data.classes
-    datasets = [test_data, set_100]
-    test_types = ['test_data', 'set_100']
-    test(OUTPUT_DIR, net, datasets, test_types, class_names, 'synthetic')
+
+    # Test the model
+    test(OUTPUT_DIR, net, [test_data], ['test_data'], class_names)
+
+    # Extract features
+    extract(OUTPUT_DIR, net, [train_data], ['synthetic'])
